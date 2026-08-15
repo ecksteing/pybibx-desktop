@@ -10,8 +10,11 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
+import re
+import subprocess
 import sys
 import threading
 import time
@@ -20,20 +23,53 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+_APP_DIR = Path(__file__).resolve().parent
+
+
+def _load_loading_status():
+    """Load sibling loading_status.py by path (embeddable Python ignores app dir on sys.path)."""
+    module_path = _APP_DIR / "loading_status.py"
+    if not module_path.is_file():
+        raise FileNotFoundError(f"Missing {module_path}")
+    spec = importlib.util.spec_from_file_location("loading_status", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_loading_status = _load_loading_status()
+_app_data_dir = _loading_status.app_data_dir
+write_status = _loading_status.write_status
+
+# Avoid Windows cp1252 crashes when upstream prints Unicode banners.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 APP_NAME = "PyBibX Desktop"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5173
 UPDATE_CHECK_INTERVAL_DAYS = 7
 
-
-def _app_data_dir() -> Path:
-    if sys.platform == "win32":
-        root = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    else:
-        root = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    path = root / APP_NAME
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+_PIP_COLLECTING = re.compile(r"^\s*Collecting\s+(\S+)", re.IGNORECASE)
+_PIP_DOWNLOADING = re.compile(r"^\s*Downloading\s+(\S+)", re.IGNORECASE)
+_PIP_USING_CACHED = re.compile(r"^\s*Using cached\s+(\S+)", re.IGNORECASE)
+_PIP_INSTALLING = re.compile(
+    r"^\s*Installing collected packages:\s*(.+)$", re.IGNORECASE
+)
+_PIP_PROGRESS = re.compile(
+    r"(?P<pct>\d+(?:\.\d+)?)\s*%.*?/\s*\S+\s+(?P<file>\S+\.(?:whl|tar\.gz))",
+    re.IGNORECASE,
+)
+_PIP_PROGRESS_ALT = re.compile(
+    r"(?P<pct>\d+(?:\.\d+)?)\s*%\|[^|]*\|\s*(?P<done>\S+)\s*/\s*(?P<total>\S+)(?:\s+(?P<file>\S+))?",
+    re.IGNORECASE,
+)
 
 
 def _stamp_path() -> Path:
@@ -49,6 +85,55 @@ def _log(message: str) -> None:
             fh.write(line + "\n")
     except OSError:
         pass
+
+
+def _status(message: str, detail: str = "", *, phase: str = "start", percent: float | None = None) -> None:
+    write_status(message, detail=detail, phase=phase, percent=percent)
+
+
+def _parse_pip_line(line: str) -> tuple[str, str, float | None] | None:
+    """Return (message, detail, percent) if the pip line is worth showing."""
+    text = line.strip().strip("\r")
+    if not text:
+        return None
+
+    # Carriage-return progress updates from pip's progress bar.
+    if "\r" in line:
+        text = line.split("\r")[-1].strip()
+
+    m = _PIP_PROGRESS.search(text) or _PIP_PROGRESS_ALT.search(text)
+    if m:
+        try:
+            pct = float(m.group("pct"))
+        except (ValueError, IndexError):
+            pct = None
+        detail = m.groupdict().get("file") or ""
+        if not detail and m.groupdict().get("done") and m.groupdict().get("total"):
+            detail = f"{m.group('done')} / {m.group('total')}"
+        return ("Downloading", detail, pct)
+
+    m = _PIP_DOWNLOADING.match(text)
+    if m:
+        return ("Downloading package", m.group(1), None)
+
+    m = _PIP_USING_CACHED.match(text)
+    if m:
+        return ("Using cached package", m.group(1), None)
+
+    m = _PIP_COLLECTING.match(text)
+    if m:
+        return ("Collecting package", m.group(1), None)
+
+    m = _PIP_INSTALLING.match(text)
+    if m:
+        packages = m.group(1).strip()
+        short = packages if len(packages) <= 80 else packages[:77] + "…"
+        return ("Installing packages", short, None)
+
+    if text.lower().startswith("successfully installed"):
+        return ("Packages installed", text[len("Successfully installed") :].strip(), 100.0)
+
+    return None
 
 
 def _installed_pybibx_version() -> str | None:
@@ -112,24 +197,62 @@ def _record_update_check() -> None:
         _log(f"Could not write PyPI check stamp: {exc}")
 
 
-def _pip_install(args: list[str]) -> int:
+def _pip_install(args: list[str], *, phase: str = "bootstrap", label: str = "Installing packages") -> int:
     cmd = [sys.executable, "-m", "pip", "install", "--upgrade", *args]
     _log("Running: " + " ".join(cmd))
-    import subprocess
+    _status(label, " ".join(args[:3]), phase=phase)
+
+    env = os.environ.copy()
+    env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+    env["PIP_PROGRESS_BAR"] = "on"
+    env["PYTHONUNBUFFERED"] = "1"
+    env["PYTHONUTF8"] = "1"
 
     creationflags = 0
     if sys.platform == "win32":
         creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    result = subprocess.run(cmd, creationflags=creationflags)
-    return int(result.returncode)
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+            env=env,
+            creationflags=creationflags,
+        )
+    except OSError as exc:
+        _log(f"Could not start pip: {exc}")
+        return 1
+
+    assert proc.stdout is not None
+    for raw in proc.stdout:
+        line = raw.rstrip("\n")
+        if line.strip():
+            print(line, flush=True)
+        parsed = _parse_pip_line(raw)
+        if parsed:
+            message, detail, percent = parsed
+            _status(message, detail, phase=phase, percent=percent)
+
+    return int(proc.wait())
 
 
 def ensure_runtime_ready() -> bool:
     """Install pybibx (+ CPU torch) if missing. Returns True when importable."""
     if _installed_pybibx_version():
+        _status("Checking installed packages", phase="start")
         return True
 
     _log("pybibx not installed; bootstrapping runtime packages...")
+    _status(
+        "Downloading AI libraries (one-time)",
+        "This may take several minutes…",
+        phase="bootstrap",
+    )
     # CPU wheels first so students avoid multi-GB CUDA builds.
     code = _pip_install(
         [
@@ -138,16 +261,35 @@ def ensure_runtime_ready() -> bool:
             "torchaudio",
             "--index-url",
             "https://download.pytorch.org/whl/cpu",
-        ]
+        ],
+        phase="bootstrap",
+        label="Downloading PyTorch (CPU)",
     )
     if code != 0:
         _log(f"CPU torch install exited with {code}; continuing with default PyPI torch.")
 
-    code = _pip_install(["pybibx"])
+    code = _pip_install(
+        ["pybibx"],
+        phase="bootstrap",
+        label="Downloading pybibx and dependencies",
+    )
     if code != 0:
         _log(f"pip install pybibx failed with exit code {code}")
+        _status("Package install failed", f"Exit code {code}", phase="error")
         return False
 
+    _status("Packages ready", phase="start", percent=100.0)
+    # Byte-compile for snappier subsequent imports.
+    try:
+        import compileall
+        from pathlib import Path as _Path
+
+        site = _Path(sys.executable).resolve().parent / "Lib" / "site-packages"
+        if site.is_dir():
+            _status("Optimizing installed packages", phase="start")
+            compileall.compile_dir(str(site), quiet=1, workers=0)
+    except Exception as exc:
+        _log(f"compileall skipped: {exc}")
     return _installed_pybibx_version() is not None
 
 
@@ -166,8 +308,9 @@ def maybe_update_pybibx() -> None:
         _log("Skipping PyPI update check (checked within the last week).")
         return
 
+    _status("Checking for pybibx updates", phase="start")
     current = _installed_pybibx_version()
-    latest = _pypi_pybibx_version()
+    latest = _pypi_pybibx_version(timeout=3.0)
     if latest is None:
         _log("PyPI unreachable or pybibx metadata missing; keeping installed copy.")
         _record_update_check()
@@ -179,7 +322,11 @@ def maybe_update_pybibx() -> None:
         return
 
     _log(f"Updating pybibx: {current or 'none'} -> {latest}")
-    code = _pip_install([f"pybibx=={latest}"])
+    code = _pip_install(
+        [f"pybibx=={latest}"],
+        phase="update",
+        label=f"Updating pybibx to {latest}",
+    )
     if code == 0:
         _log(f"pybibx updated to {_installed_pybibx_version() or latest}")
     else:
@@ -198,26 +345,36 @@ def start_web_app() -> str:
         "NO",
     }
 
+    _status(
+        "Loading AI libraries",
+        "Importing pybibx / PyTorch (this is the slow part on each launch)…",
+        phase="start",
+    )
     import pybibx
 
+    _status("Starting web server", phase="start")
     # Upstream binds 0.0.0.0; we still advertise localhost for the loading page.
     url = pybibx.web_app(port=port, open_browser=open_browser)
     _log(f"pybibx web app listening: {url} (preferred host {host})")
+    _status("Ready — opening PyBibX", url, phase="ready", percent=100.0)
     return url
 
 
 def main() -> int:
     _log(f"{APP_NAME} launch_app starting (python={sys.executable})")
+    _status("Starting PyBibX Desktop", phase="start")
     if not ensure_runtime_ready():
         _log("Runtime bootstrap failed.")
         return 2
 
+    # Loading page is already visible in the browser; safe to do a quick weekly check.
     maybe_update_pybibx()
 
     try:
         start_web_app()
     except Exception as exc:
         _log(f"Failed to start pybibx web app: {exc}")
+        _status("Failed to start web app", str(exc), phase="error")
         return 1
 
     try:
@@ -235,6 +392,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    # Keep a reference so static analysers know threading may be used by pybibx.
     _ = threading
     raise SystemExit(main())

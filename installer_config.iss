@@ -60,6 +60,7 @@ Name: "bootstrap"; Description: "Download PyBibX and AI libraries now (recommend
 Source: "run_pybibx.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "launch_app.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "loading_status.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "loading.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "stop_pybibx.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Also pack for ExtractTemporaryFile so upgrades use THIS script, not the old install's copy.
@@ -89,7 +90,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}
 Type: filesandordirs; Name: "{app}"
 
 [Code]
-procedure StopAppProcessesIn(const AppDir: String);
+procedure StopAppProcessesIn(const AppDir: String; const FromInstaller: Boolean);
 var
   ResultCode: Integer;
   ScriptPath: String;
@@ -98,12 +99,20 @@ begin
   if AppDir = '' then
     Exit;
 
-  { Prefer the stop script packed in this setup (dontcopy), so upgrades are not
-    stuck with a weaker script from the previously installed version. }
-  ExtractTemporaryFile('stop_pybibx.ps1');
-  ScriptPath := ExpandConstant('{tmp}\stop_pybibx.ps1');
-  if not FileExists(ScriptPath) then
+  ScriptPath := '';
+
+  { ExtractTemporaryFile is only valid during install/upgrade — never uninstall. }
+  if FromInstaller then
+  begin
+    { Prefer the stop script packed in this setup (dontcopy), so upgrades are not
+      stuck with a weaker script from the previously installed version. }
+    ExtractTemporaryFile('stop_pybibx.ps1');
+    ScriptPath := ExpandConstant('{tmp}\stop_pybibx.ps1');
+  end;
+
+  if (ScriptPath = '') or (not FileExists(ScriptPath)) then
     ScriptPath := AppDir + '\stop_pybibx.ps1';
+
   if FileExists(ScriptPath) then
   begin
     Params :=
@@ -119,18 +128,19 @@ end;
 
 function InitializeSetup(): Boolean;
 begin
-  StopAppProcessesIn(ExpandConstant('{localappdata}\{#MyAppName}'));
+  StopAppProcessesIn(ExpandConstant('{localappdata}\{#MyAppName}'), True);
   Result := True;
 end;
 
 function InitializeUninstall(): Boolean;
 begin
-  StopAppProcessesIn(ExpandConstant('{app}'));
+  { Use the already-installed stop script; do not call ExtractTemporaryFile. }
+  StopAppProcessesIn(ExpandConstant('{app}'), False);
   Result := True;
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  StopAppProcessesIn(ExpandConstant('{app}'));
+  StopAppProcessesIn(ExpandConstant('{app}'), True);
   Result := '';
 end;

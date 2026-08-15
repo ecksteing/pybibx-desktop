@@ -12,25 +12,106 @@
       --muted: #5b6b7c;
       --accent: #1f6f8b;
       --ring: #d7e3ec;
+      --track: #e8eef3;
+      --stick: #1f6f8b;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
       font-family: "Segoe UI", Tahoma, sans-serif;
       color: var(--text);
       background:
         radial-gradient(circle at top, #e7f2f7 0%, transparent 45%),
         var(--bg);
+      overflow: hidden;
+    }
+    .layout {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto auto;
+      align-items: end;
+      padding: 24px 16px 28px;
+    }
+    .stage {
+      position: relative;
+      height: 190px;
+      width: min(760px, 100%);
+      margin: 0 auto 6px;
+      overflow: hidden;
+    }
+    .ground {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 14px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--ring) 12%, var(--ring) 88%, transparent);
+    }
+    #stickActor {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      width: 140px;
+      height: 170px;
+      transform: translateX(0);
+      will-change: transform;
+      pointer-events: none;
+    }
+    #stickActor svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    #stickActor .limb,
+    #stickActor .prop-stroke {
+      fill: none;
+      stroke: var(--stick);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    #stickActor .head {
+      fill: none;
+      stroke: var(--stick);
+      stroke-width: 4;
+    }
+    #stickActor .prop-fill {
+      fill: none;
+      stroke: var(--stick);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.9;
+    }
+    #stickActor .prop-text {
+      fill: var(--stick);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    #stickActor .prop-group {
+      display: none;
+    }
+    #stickActor .prop-group.is-on {
+      display: inline;
+    }
+    .act-label {
+      text-align: center;
+      font-size: 0.88rem;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      min-height: 1.2em;
+      margin-bottom: 10px;
     }
     .card {
-      width: min(440px, calc(100vw - 32px));
+      width: min(480px, 100%);
+      margin: 0 auto;
       background: var(--card);
       border: 1px solid var(--ring);
       border-radius: 16px;
-      padding: 32px 28px;
+      padding: 28px 28px 24px;
       text-align: center;
       box-shadow: 0 12px 40px rgba(31, 42, 55, 0.08);
     }
@@ -45,67 +126,485 @@
       line-height: 1.45;
       font-size: 0.98rem;
     }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      border: 4px solid #d9e7ee;
-      border-top-color: var(--accent);
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
     .status {
       margin-top: 18px;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: var(--accent);
       min-height: 1.2em;
+      font-weight: 600;
+    }
+    .detail {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      min-height: 1.2em;
+      word-break: break-all;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    .bar {
+      margin-top: 18px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--track);
+      overflow: hidden;
+      text-align: left;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 30%;
+      border-radius: 999px;
+      background: var(--accent);
+      transition: width 0.25s ease;
+    }
+    .bar.indeterminate > span {
+      width: 35%;
+      animation: slide 1.2s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(320%); }
+    }
+    .pct {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-height: 1em;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #stickActor { display: none; }
+      .act-label { display: none; }
+      .stage { height: 0; margin: 0; }
     }
   </style>
 </head>
 <body>
-  <main class="card">
-    <div class="spinner" aria-hidden="true"></div>
-    <h1>Starting PyBibX</h1>
-    <p id="blurb">Please wait while PyBibX Desktop prepares the app. The first run can take several minutes while AI libraries download.</p>
-    <div class="status" id="status">Checking for the app…</div>
-  </main>
+  <div class="layout">
+    <div></div>
+    <div>
+      <div class="stage" aria-hidden="true">
+        <div class="ground"></div>
+        <div id="stickActor">
+          <svg viewBox="0 0 140 160" xmlns="http://www.w3.org/2000/svg">
+            <!-- props (toggled per activity) -->
+            <g id="propTree" class="prop-group">
+              <line class="prop-stroke" x1="118" y1="150" x2="118" y2="70" />
+              <circle class="prop-fill" cx="118" cy="58" r="22" />
+              <circle class="prop-fill" cx="104" cy="68" r="14" />
+              <circle class="prop-fill" cx="132" cy="66" r="14" />
+            </g>
+            <g id="propBoat" class="prop-group">
+              <path class="prop-fill" d="M18 128 Q70 148 122 128 L110 138 Q70 152 30 138 Z" />
+              <line class="prop-stroke" id="oar" x1="40" y1="100" x2="10" y2="128" />
+            </g>
+            <g id="propDog" class="prop-group">
+              <!-- small dog running ahead: body, head, snout, ear, legs, tail -->
+              <ellipse class="prop-fill" cx="112" cy="136" rx="14" ry="7" />
+              <circle class="prop-fill" cx="126" cy="132" r="6" />
+              <line class="prop-stroke" x1="130" y1="132" x2="136" y2="134" />
+              <path class="prop-fill" d="M122 126 L126 118 L130 126" />
+              <line class="prop-stroke" x1="100" y1="132" x2="92" y2="124" />
+              <line class="prop-stroke" x1="104" y1="140" x2="100" y2="150" />
+              <line class="prop-stroke" x1="110" y1="141" x2="108" y2="150" />
+              <line class="prop-stroke" x1="116" y1="141" x2="118" y2="150" />
+              <line class="prop-stroke" x1="122" y1="140" x2="126" y2="150" />
+            </g>
+            <g id="propMouse" class="prop-group">
+              <ellipse class="prop-fill" cx="22" cy="142" rx="10" ry="6" />
+              <circle class="prop-fill" cx="12" cy="140" r="4" />
+              <line class="prop-stroke" x1="30" y1="142" x2="40" y2="138" />
+              <circle class="prop-fill" cx="8" cy="134" r="3" />
+              <circle class="prop-fill" cx="14" cy="132" r="3" />
+            </g>
+            <g id="propPlane" class="prop-group">
+              <ellipse class="prop-fill" cx="70" cy="70" rx="42" ry="12" />
+              <line class="prop-stroke" x1="70" y1="70" x2="40" y2="95" />
+              <line class="prop-stroke" x1="70" y1="70" x2="100" y2="95" />
+              <line class="prop-stroke" x1="100" y1="70" x2="118" y2="58" />
+              <line class="prop-stroke" x1="100" y1="70" x2="118" y2="82" />
+            </g>
+            <g id="propLaptop" class="prop-group">
+              <rect class="prop-fill" x="78" y="78" width="36" height="24" rx="2" />
+              <line class="prop-stroke" x1="74" y1="104" x2="118" y2="104" />
+              <text class="prop-text" x="84" y="94">&lt;/&gt;</text>
+            </g>
+            <g id="propMath" class="prop-group">
+              <text class="prop-text" id="mathA" x="86" y="52">∑</text>
+              <text class="prop-text" id="mathB" x="104" y="70">π</text>
+              <text class="prop-text" id="mathC" x="90" y="88">√</text>
+            </g>
+            <g id="propZzz" class="prop-group">
+              <text class="prop-text" id="zzz1" x="78" y="28">z</text>
+              <text class="prop-text" id="zzz2" x="90" y="18">z</text>
+              <text class="prop-text" id="zzz3" x="104" y="10">Z</text>
+            </g>
+
+            <!-- stick body -->
+            <g id="figure">
+              <circle class="head" id="head" cx="50" cy="28" r="10" />
+              <line class="limb" id="torso" x1="50" y1="38" x2="50" y2="78" />
+              <line class="limb" id="armL" x1="50" y1="50" x2="34" y2="68" />
+              <line class="limb" id="armR" x1="50" y1="50" x2="66" y2="68" />
+              <line class="limb" id="legL" x1="50" y1="78" x2="38" y2="112" />
+              <line class="limb" id="legR" x1="50" y1="78" x2="62" y2="112" />
+            </g>
+          </svg>
+        </div>
+      </div>
+      <div class="act-label" id="actLabel">Warming up…</div>
+    </div>
+    <main class="card">
+      <h1>Starting PyBibX</h1>
+      <p id="blurb">Please wait while PyBibX Desktop prepares the app. The first run can take several minutes while AI libraries download.</p>
+      <div class="status" id="status">Checking for the app…</div>
+      <div class="detail" id="detail"></div>
+      <div class="bar indeterminate" id="bar" aria-hidden="true"><span id="barFill"></span></div>
+      <div class="pct" id="pct"></div>
+    </main>
+  </div>
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
       var target = params.get("target") || "http://127.0.0.1:5173/";
       var mode = params.get("mode") || "start";
       var statusEl = document.getElementById("status");
+      var detailEl = document.getElementById("detail");
       var blurbEl = document.getElementById("blurb");
+      var barEl = document.getElementById("bar");
+      var barFill = document.getElementById("barFill");
+      var pctEl = document.getElementById("pct");
+      var redirected = false;
 
       if (mode === "bootstrap") {
         blurbEl.textContent =
           "Downloading PyBibX and AI libraries (one-time). This needs internet and may take several minutes.";
         statusEl.textContent = "Installing packages…";
+      } else if (mode === "reopen") {
+        blurbEl.textContent = "PyBibX is already running. Taking you to the app…";
+        statusEl.textContent = "Reopening…";
+      } else {
+        blurbEl.textContent =
+          "Please wait while PyBibX Desktop warms up. Loading AI libraries can take up to a minute even after install.";
+        statusEl.textContent = "Loading libraries…";
       }
 
-      function setStatus(text) {
-        statusEl.textContent = text;
+      function setProgress(percent) {
+        if (typeof percent === "number" && !isNaN(percent) && percent >= 0) {
+          var clamped = Math.max(0, Math.min(100, percent));
+          barEl.classList.remove("indeterminate");
+          barFill.style.width = clamped + "%";
+          barFill.style.transform = "none";
+          pctEl.textContent = Math.round(clamped) + "%";
+        } else {
+          barEl.classList.add("indeterminate");
+          barFill.style.width = "35%";
+          barFill.style.transform = "";
+          pctEl.textContent = "";
+        }
+      }
+
+      function refreshStatus() {
+        fetch("/status", { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.message) {
+              statusEl.textContent = data.message;
+            }
+            if (data && data.detail) {
+              detailEl.textContent = data.detail;
+            }
+            if (data) {
+              setProgress(data.percent);
+            }
+          })
+          .catch(function () { /* keep last text */ });
       }
 
       function probe() {
-        if (mode === "bootstrap") {
-          setStatus("Installing packages…");
-        } else {
-          setStatus("Waiting for PyBibX…");
-        }
-        // no-cors: opaque success means the server answered.
-        fetch(target, { method: "GET", mode: "no-cors", cache: "no-store" })
-          .then(function () {
-            setStatus("Opening PyBibX…");
-            window.location.replace(target);
+        if (redirected) return;
+        fetch("/readyz", { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.ready) {
+              redirected = true;
+              statusEl.textContent = "Opening PyBibX…";
+              detailEl.textContent = "";
+              setProgress(100);
+              window.location.replace(target);
+              return;
+            }
+            setTimeout(probe, 700);
           })
           .catch(function () {
             setTimeout(probe, 900);
           });
       }
 
+      refreshStatus();
+      setInterval(refreshStatus, 600);
       probe();
+
+      var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) return;
+
+      var actor = document.getElementById("stickActor");
+      var stage = actor.parentElement;
+      var label = document.getElementById("actLabel");
+      var armL = document.getElementById("armL");
+      var armR = document.getElementById("armR");
+      var legL = document.getElementById("legL");
+      var legR = document.getElementById("legR");
+      var torso = document.getElementById("torso");
+      var head = document.getElementById("head");
+      var oar = document.getElementById("oar");
+      var propIds = ["propTree", "propBoat", "propDog", "propMouse", "propPlane", "propLaptop", "propMath", "propZzz"];
+
+      // ~14–18s each so long downloads stay entertaining
+      var acts = [
+        { id: "walk", label: "Out for a stroll…", duration: 15000, speed: 48, props: [] },
+        { id: "run", label: "Sprinting to the servers…", duration: 14000, speed: 115, props: [] },
+        { id: "dance", label: "Victory dance (still downloading)…", duration: 15000, speed: 22, props: [] },
+        { id: "yoga", label: "Deep stretch / deep breath…", duration: 16000, speed: 8, props: [] },
+        { id: "row", label: "Rowing across the data lake…", duration: 17000, speed: 36, props: ["propBoat"] },
+        { id: "snore", label: "Power nap while packages install…", duration: 16000, speed: 0, props: ["propZzz"] },
+        { id: "climb", label: "Climbing the dependency tree…", duration: 17000, speed: 10, props: ["propTree"] },
+        { id: "chaseDog", label: "Chasing a very good dog…", duration: 15000, speed: 95, props: ["propDog"] },
+        { id: "fleeMouse", label: "Running from a tiny mouse…", duration: 15000, speed: 105, props: ["propMouse"] },
+        { id: "plane", label: "Flying to the mirror CDN…", duration: 17000, speed: 70, props: ["propPlane"] },
+        { id: "math", label: "Doing the bibliometric maths…", duration: 16000, speed: 14, props: ["propMath"] },
+        { id: "code", label: "Writing just one more script…", duration: 16000, speed: 12, props: ["propLaptop"] },
+        { id: "read", label: "Skimming abstracts at light speed…", duration: 15000, speed: 20, props: [] },
+        { id: "jump", label: "Hopping over version conflicts…", duration: 14000, speed: 50, props: [] }
+      ];
+
+      function shuffle(arr) {
+        for (var i = arr.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = tmp;
+        }
+        return arr;
+      }
+      shuffle(acts);
+
+      var actIndex = 0;
+      var actStarted = performance.now();
+      var x = 30;
+      var dir = 1;
+      var climbY = 0;
+      var last = performance.now();
+
+      function setLine(el, x1, y1, x2, y2) {
+        el.setAttribute("x1", x1);
+        el.setAttribute("y1", y1);
+        el.setAttribute("x2", x2);
+        el.setAttribute("y2", y2);
+      }
+
+      function showProps(list) {
+        for (var i = 0; i < propIds.length; i++) {
+          var el = document.getElementById(propIds[i]);
+          if (!el) continue;
+          if (list.indexOf(propIds[i]) >= 0) el.classList.add("is-on");
+          else el.classList.remove("is-on");
+        }
+      }
+
+      function pose(act, t) {
+        var hipX = 50, hipY = 78, shY = 50, shX = 50;
+        var swing, bounce, sway;
+
+        if (act === "walk" || act === "read") {
+          swing = Math.sin(t * 7) * (act === "read" ? 10 : 16);
+          bounce = Math.abs(Math.sin(t * 7)) * 2;
+          head.setAttribute("cy", String(28 - bounce * 0.3));
+          setLine(torso, shX, 38 - bounce * 0.2, hipX, hipY - bounce);
+          if (act === "read") {
+            setLine(armL, shX, shY, shX - 8, shY + 8);
+            setLine(armR, shX, shY, shX + 18, shY + 4);
+          } else {
+            setLine(armL, shX, shY, shX - 16, shY + 16 - swing);
+            setLine(armR, shX, shY, shX + 16, shY + 16 + swing);
+          }
+          setLine(legL, hipX, hipY - bounce, hipX - 12, 112 - bounce + swing * 0.35);
+          setLine(legR, hipX, hipY - bounce, hipX + 12, 112 - bounce - swing * 0.35);
+        } else if (act === "run" || act === "chaseDog" || act === "fleeMouse") {
+          swing = Math.sin(t * 13) * 24;
+          bounce = Math.abs(Math.sin(t * 13)) * 5;
+          head.setAttribute("cy", String(26 - bounce * 0.4));
+          setLine(torso, shX + 2, 36 - bounce * 0.3, hipX - 2, hipY - bounce);
+          setLine(armL, shX, shY - 2, shX - 20, shY + 6 - swing);
+          setLine(armR, shX, shY - 2, shX + 20, shY + 6 + swing);
+          setLine(legL, hipX, hipY - bounce, hipX - 16, 110 - bounce + swing * 0.45);
+          setLine(legR, hipX, hipY - bounce, hipX + 16, 110 - bounce - swing * 0.45);
+          if (act === "fleeMouse") {
+            // arms up in panic
+            setLine(armL, shX, shY, shX - 14, shY - 16);
+            setLine(armR, shX, shY, shX + 14, shY - 16);
+          }
+        } else if (act === "dance") {
+          swing = Math.sin(t * 9) * 20;
+          bounce = Math.abs(Math.sin(t * 5.5)) * 6;
+          head.setAttribute("cy", String(26 - bounce * 0.5));
+          setLine(torso, shX + Math.sin(t * 4) * 3, 38 - bounce, hipX, hipY - bounce * 0.4);
+          setLine(armL, shX, shY - bounce * 0.3, shX - 8 + swing * 0.2, shY - 16);
+          setLine(armR, shX, shY - bounce * 0.3, shX + 8 - swing * 0.2, shY - 16);
+          setLine(legL, hipX, hipY - bounce * 0.4, hipX - 14, 112 - bounce * 0.2);
+          setLine(legR, hipX, hipY - bounce * 0.4, hipX + 10 + Math.sin(t * 7) * 6, 100 - bounce);
+        } else if (act === "yoga") {
+          sway = Math.sin(t * 1.4) * 4;
+          head.setAttribute("cy", "27");
+          setLine(torso, shX + sway * 0.2, 38, hipX, hipY);
+          setLine(armL, shX, shY, shX - 6 + sway, 18);
+          setLine(armR, shX, shY, shX + 6 + sway, 18);
+          setLine(legL, hipX, hipY, hipX - 2, 114);
+          setLine(legR, hipX, hipY, hipX + 16, 92);
+        } else if (act === "row") {
+          swing = Math.sin(t * 4) * 18;
+          bounce = Math.abs(Math.sin(t * 4)) * 2;
+          head.setAttribute("cy", String(34 - bounce));
+          setLine(torso, shX, 44, hipX, 88);
+          setLine(armL, shX, 56, shX - 22, 70 + swing);
+          setLine(armR, shX, 56, shX + 8, 72 - swing * 0.4);
+          setLine(legL, hipX, 88, hipX - 8, 108);
+          setLine(legR, hipX, 88, hipX + 14, 108);
+          if (oar) setLine(oar, shX - 8, 62, 8, 120 + swing * 0.3);
+        } else if (act === "snore") {
+          bounce = Math.sin(t * 1.8) * 1.5;
+          head.setAttribute("cy", String(78 + bounce));
+          head.setAttribute("cx", "58");
+          setLine(torso, 48, 88, 90, 92);
+          setLine(armL, 58, 90, 46, 102);
+          setLine(armR, 70, 90, 86, 84);
+          setLine(legL, 90, 92, 108, 100);
+          setLine(legR, 90, 92, 112, 110);
+          var z1 = document.getElementById("zzz1");
+          var z2 = document.getElementById("zzz2");
+          var z3 = document.getElementById("zzz3");
+          if (z1) z1.setAttribute("opacity", String(0.4 + 0.6 * Math.abs(Math.sin(t * 2))));
+          if (z2) z2.setAttribute("opacity", String(0.4 + 0.6 * Math.abs(Math.sin(t * 2 + 1))));
+          if (z3) z3.setAttribute("opacity", String(0.4 + 0.6 * Math.abs(Math.sin(t * 2 + 2))));
+        } else if (act === "climb") {
+          swing = Math.sin(t * 5) * 10;
+          climbY = (climbY + 0.35) % 40;
+          var cy = 70 - climbY;
+          head.setAttribute("cx", "50");
+          head.setAttribute("cy", String(cy - 20));
+          setLine(torso, 50, cy - 10, 50, cy + 28);
+          setLine(armL, 50, cy + 2, 50 + 14 + swing * 0.2, cy - 8);
+          setLine(armR, 50, cy + 2, 50 + 16 - swing * 0.2, cy + 10);
+          setLine(legL, 50, cy + 28, 50 + 12, cy + 44);
+          setLine(legR, 50, cy + 28, 50 + 10, cy + 38 + swing * 0.3);
+        } else if (act === "plane") {
+          bounce = Math.sin(t * 3) * 4;
+          head.setAttribute("cx", "70");
+          head.setAttribute("cy", String(62 + bounce));
+          setLine(torso, 70, 72 + bounce, 70, 88 + bounce);
+          setLine(armL, 70, 78 + bounce, 52, 78 + bounce);
+          setLine(armR, 70, 78 + bounce, 88, 78 + bounce);
+          setLine(legL, 70, 88 + bounce, 62, 98 + bounce);
+          setLine(legR, 70, 88 + bounce, 78, 98 + bounce);
+        } else if (act === "math") {
+          sway = Math.sin(t * 2) * 3;
+          head.setAttribute("cx", "50");
+          head.setAttribute("cy", "28");
+          setLine(torso, shX, 38, hipX, hipY);
+          setLine(armL, shX, shY, 78 + sway, 58);
+          setLine(armR, shX, shY, 86, 72 + sway);
+          setLine(legL, hipX, hipY, hipX - 10, 112);
+          setLine(legR, hipX, hipY, hipX + 10, 112);
+          var ma = document.getElementById("mathA");
+          var mb = document.getElementById("mathB");
+          var mc = document.getElementById("mathC");
+          if (ma) ma.setAttribute("y", String(48 + Math.sin(t * 3) * 4));
+          if (mb) mb.setAttribute("y", String(68 + Math.sin(t * 3 + 1) * 4));
+          if (mc) mc.setAttribute("y", String(86 + Math.sin(t * 3 + 2) * 4));
+        } else if (act === "code") {
+          bounce = Math.abs(Math.sin(t * 6)) * 1.5;
+          head.setAttribute("cx", "50");
+          head.setAttribute("cy", String(30 - bounce));
+          setLine(torso, shX, 40, hipX, 82);
+          setLine(armL, shX, shY, 82, 90 + bounce);
+          setLine(armR, shX, shY, 96, 88 - bounce);
+          setLine(legL, hipX, 82, hipX - 8, 112);
+          setLine(legR, hipX, 82, hipX + 12, 112);
+        } else if (act === "jump") {
+          var cycle = (t * 2.2) % (Math.PI * 2);
+          bounce = Math.max(0, Math.sin(cycle)) * 28;
+          swing = Math.sin(cycle) * 12;
+          head.setAttribute("cy", String(28 - bounce));
+          setLine(torso, shX, 38 - bounce, hipX, hipY - bounce);
+          setLine(armL, shX, shY - bounce, shX - 16, shY - bounce - swing);
+          setLine(armR, shX, shY - bounce, shX + 16, shY - bounce - swing);
+          setLine(legL, hipX, hipY - bounce, hipX - 10, 112 - bounce + Math.max(0, -swing));
+          setLine(legR, hipX, hipY - bounce, hipX + 10, 112 - bounce + Math.max(0, -swing));
+        } else {
+          head.setAttribute("cx", "50");
+          head.setAttribute("cy", "28");
+          setLine(torso, 50, 38, 50, 78);
+          setLine(armL, 50, 50, 34, 68);
+          setLine(armR, 50, 50, 66, 68);
+          setLine(legL, 50, 78, 38, 112);
+          setLine(legR, 50, 78, 62, 112);
+        }
+
+        // reset head cx when not overridden by snore/plane
+        if (act !== "snore" && act !== "plane" && act !== "climb") {
+          head.setAttribute("cx", "50");
+        }
+      }
+
+      function applyAct(act) {
+        label.textContent = act.label;
+        showProps(act.props || []);
+        head.setAttribute("cx", "50");
+        climbY = 0;
+        if (act.id === "snore" || act.id === "yoga" || act.id === "code" || act.id === "math") {
+          // face a stable direction for seated/standing bits
+          dir = 1;
+        }
+      }
+
+      function tick(now) {
+        var dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        var act = acts[actIndex];
+        if (now - actStarted > act.duration) {
+          actIndex = (actIndex + 1) % acts.length;
+          if (actIndex === 0) shuffle(acts);
+          act = acts[actIndex];
+          actStarted = now;
+          applyAct(act);
+        }
+
+        var maxX = Math.max(20, stage.clientWidth - 150);
+        var speed = act.speed;
+        if (act.id === "plane") {
+          // gentle airborne drift; bounce handled in pose
+          x += dir * speed * dt;
+        } else if (act.id === "snore") {
+          x = Math.min(Math.max(x, 40), maxX - 40);
+        } else if (act.id === "climb") {
+          x = Math.min(Math.max(x, maxX * 0.55), maxX * 0.7);
+        } else {
+          x += dir * speed * dt;
+        }
+        if (x >= maxX) { x = maxX; dir = -1; }
+        if (x <= 0) { x = 0; dir = 1; }
+
+        // don't mirror text-heavy / boat props awkwardly; flip only locomotion
+        var flip = (act.id === "walk" || act.id === "run" || act.id === "chaseDog" ||
+          act.id === "fleeMouse" || act.id === "dance" || act.id === "jump" || act.id === "row")
+          ? dir : 1;
+        var yOff = act.id === "plane" ? -18 + Math.sin(now / 400) * 6 : 0;
+        actor.style.transform = "translateX(" + x + "px) translateY(" + yOff + "px) scaleX(" + flip + ")";
+        pose(act.id, now / 1000);
+        requestAnimationFrame(tick);
+      }
+
+      applyAct(acts[0]);
+      requestAnimationFrame(tick);
     })();
   </script>
 </body>

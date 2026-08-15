@@ -11,6 +11,7 @@ import sys
 import threading
 import traceback
 import webbrowser
+import json
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -143,18 +144,32 @@ def app_url(port: int = APP_PORT) -> str:
     return f"http://{APP_HOST}:{port}"
 
 
-def port_is_listening(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(0.5)
-        return sock.connect_ex((APP_HOST, port)) == 0
+def fetch_app_html(port: int = APP_PORT, timeout: float = 2.0) -> str | None:
+    """Return response body text if the web app looks alive, else None."""
+    try:
+        request = Request(
+            app_url(port),
+            headers={"User-Agent": f"{APP_NAME}/health"},
+        )
+        with urlopen(request, timeout=timeout) as response:
+            status = getattr(response, "status", 200)
+            if not (200 <= status < 500):
+                return None
+            raw = response.read(120_000)
+        text = raw.decode("utf-8", errors="replace")
+        # pybibx serves a large inline HTML shell at /
+        lowered = text.lower()
+        if len(text) < 500:
+            return None
+        if "pybibx" in lowered or "<html" in lowered:
+            return text
+        return None
+    except Exception:
+        return None
 
 
 def app_http_reachable(port: int = APP_PORT) -> bool:
-    try:
-        with urlopen(app_url(port), timeout=1.5) as response:
-            return 200 <= getattr(response, "status", 200) < 500
-    except Exception:
-        return False
+    return fetch_app_html(port) is not None
 
 
 def open_app_in_browser(port: int = APP_PORT) -> None:
@@ -166,6 +181,14 @@ def open_loading_page(
     app_port: int = APP_PORT,
     mode: str = "start",
 ) -> ThreadingHTTPServer | None:
+    if str(base_dir) not in sys.path:
+        sys.path.insert(0, str(base_dir))
+    try:
+        from loading_status import read_status, write_status
+    except ImportError:
+        read_status = None  # type: ignore[assignment]
+        write_status = None  # type: ignore[assignment]
+
     loading_file = base_dir / "loading.html"
     if loading_file.is_file():
         html = loading_file.read_text(encoding="utf-8")
@@ -179,8 +202,69 @@ def open_loading_page(
             "</body></html>"
         )
 
+    if write_status is not None:
+        if mode == "bootstrap":
+            write_status(
+                "Preparing to download AI libraries",
+                detail="One-time setup; this can take several minutes…",
+                phase="bootstrap",
+            )
+        elif mode == "reopen":
+            write_status("Reopening PyBibX", phase="ready", percent=100.0)
+        else:
+            write_status(
+                "Loading Python libraries",
+                detail="Subsequent launches can take a minute while AI packages warm up…",
+                phase="start",
+            )
+
     class LoadingHandler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802
+            path = self.path.split("?", 1)[0]
+            if path in ("/status", "/status.json"):
+                if read_status is None:
+                    payload = {
+                        "phase": mode,
+                        "message": "Starting…",
+                        "detail": "",
+                        "percent": None,
+                    }
+                else:
+                    payload = read_status()
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            if path in ("/readyz", "/health"):
+                healthy = fetch_app_html(app_port, timeout=1.2) is not None
+                phase = "unknown"
+                if read_status is not None:
+                    try:
+                        phase = str(read_status().get("phase") or "unknown")
+                    except Exception:
+                        phase = "unknown"
+                if mode == "reopen":
+                    ready = healthy
+                else:
+                    # Wait until launch_app marks the UI ready (after import + bind).
+                    ready = healthy and phase == "ready"
+                payload = {"ready": bool(ready), "healthy": bool(healthy), "phase": phase}
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             body = html.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -195,8 +279,16 @@ def open_loading_page(
     try:
         server = ThreadingHTTPServer((APP_HOST, LOADING_PORT), LoadingHandler)
     except OSError as exc:
-        log(f"Could not start loading page server on {LOADING_PORT}: {exc}")
-        return None
+        log(f"Loading port {LOADING_PORT} busy ({exc}); trying to free it.")
+        kill_pids(pids_listening_on_port(LOADING_PORT))
+        try:
+            import time
+
+            time.sleep(0.6)
+            server = ThreadingHTTPServer((APP_HOST, LOADING_PORT), LoadingHandler)
+        except OSError as exc2:
+            log(f"Could not start loading page server on {LOADING_PORT}: {exc2}")
+            return None
 
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -205,6 +297,12 @@ def open_loading_page(
     log(f"Opening loading page: {loading_url}")
     webbrowser.open(loading_url)
     return server
+
+
+def port_is_listening(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        return sock.connect_ex((APP_HOST, port)) == 0
 
 
 def _creationflags_no_window() -> int:
@@ -263,18 +361,18 @@ def kill_pids(pids: set[int]) -> None:
             log(f"Could not stop PID {pid}: {exc}")
 
 
-def prepare_app_port(port: int = APP_PORT) -> bool:
+def prepare_app_port(port: int = APP_PORT) -> str:
     """
-    If the web app is already running, reopen the browser and return True
-    (caller should exit). Otherwise free a stuck port if needed and return False.
+    Returns:
+      - "running" if a healthy PyBibX UI is already serving
+      - "free" if the port is available (or was freed)
     """
     if app_http_reachable(port):
-        log(f"PyBibX already running at {app_url(port)}; reopening browser.")
-        open_app_in_browser(port)
-        return True
+        log(f"PyBibX already running and healthy at {app_url(port)}.")
+        return "running"
 
     if port_is_listening(port):
-        log(f"Port {port} is in use but PyBibX is not responding; freeing it.")
+        log(f"Port {port} is in use but PyBibX UI is not healthy; freeing it.")
         kill_pids(pids_listening_on_port(port))
         try:
             import time
@@ -282,7 +380,7 @@ def prepare_app_port(port: int = APP_PORT) -> bool:
             time.sleep(1.0)
         except Exception:
             pass
-    return False
+    return "free"
 
 
 def find_python(base_dir: Path) -> Path | None:
@@ -302,21 +400,26 @@ def find_python(base_dir: Path) -> Path | None:
     return None
 
 
-def pybibx_importable(python_path: Path) -> bool:
+def pybibx_installed(python_path: Path) -> bool:
+    """Fast check: metadata only (avoids importing torch/pybibx)."""
     try:
         result = subprocess.run(
-            [str(python_path), "-c", "import pybibx"],
+            [
+                str(python_path),
+                "-c",
+                "from importlib.metadata import version; print(version('pybibx'))",
+            ],
             capture_output=True,
             text=True,
             creationflags=_creationflags_no_window(),
-            timeout=120,
+            timeout=30,
         )
-        return result.returncode == 0
+        return result.returncode == 0 and bool((result.stdout or "").strip())
     except (OSError, subprocess.TimeoutExpired):
         return False
 
 
-def start_application(base_dir: Path) -> int:
+def start_application(base_dir: Path, *, mode: str = "start") -> int:
     python_path = find_python(base_dir)
     launch_script = base_dir / "launch_app.py"
 
@@ -337,19 +440,24 @@ def start_application(base_dir: Path) -> int:
         )
         return 1
 
-    needs_bootstrap = not pybibx_importable(python_path)
-    mode = "bootstrap" if needs_bootstrap else "start"
-    if needs_bootstrap:
-        log("pybibx missing; first-run / post-install bootstrap will run inside launch_app.py")
-
     env = os.environ.copy()
     env["PYBIBX_DESKTOP_HOST"] = APP_HOST
     env["PYBIBX_DESKTOP_PORT"] = str(APP_PORT)
     env["PYBIBX_DESKTOP_LAUNCH_BROWSER"] = "0"
-    # Keep pip output out of a console window; logs go to runtime.log / launcher.log.
     env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
     env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUNBUFFERED"] = "1"
     env["PYTHONNOUSERSITE"] = "1"
+    # Faster / quieter cold start for scientific stacks.
+    env.setdefault("OMP_NUM_THREADS", "1")
+    env.setdefault("MKL_NUM_THREADS", "1")
+    env.setdefault("OPENBLAS_NUM_THREADS", "1")
+    env.setdefault("NUMEXPR_NUM_THREADS", "1")
+    env.setdefault("TORCH_NUM_THREADS", "1")
+    env.setdefault("TOKENIZERS_PARALLELISM", "false")
+    env.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+    env.setdefault("TRANSFORMERS_VERBOSITY", "error")
 
     creationflags = 0
     startupinfo = None
@@ -358,9 +466,7 @@ def start_application(base_dir: Path) -> int:
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
-    log(f"Starting: {python_path} {launch_script}")
-    loading_server = open_loading_page(base_dir, APP_PORT, mode=mode)
-
+    log(f"Starting: {python_path} {launch_script} (mode={mode})")
     try:
         rotate_logs_if_needed()
         with log_path().open("a", encoding="utf-8") as fh:
@@ -383,12 +489,6 @@ def start_application(base_dir: Path) -> int:
             error=True,
         )
         return 1
-    finally:
-        if loading_server is not None:
-            try:
-                loading_server.shutdown()
-            except Exception:
-                pass
 
     if result.returncode != 0:
         try:
@@ -425,10 +525,42 @@ def main() -> int:
     log(f"Launcher start version={current_version} base_dir={base_dir}")
     check_for_wrapper_updates(current_version)
 
-    if prepare_app_port(APP_PORT):
+    port_state = prepare_app_port(APP_PORT)
+    python_path = find_python(base_dir)
+
+    # Open the loading UI immediately (before any slow work).
+    if port_state == "running":
+        loading_server = open_loading_page(base_dir, APP_PORT, mode="reopen")
+        # Keep serving the loading page long enough for the redirect.
+        try:
+            import time
+
+            time.sleep(4.0)
+        except Exception:
+            pass
+        if loading_server is not None:
+            try:
+                loading_server.shutdown()
+            except Exception:
+                pass
         return 0
 
-    return start_application(base_dir)
+    needs_bootstrap = True
+    if python_path is not None:
+        needs_bootstrap = not pybibx_installed(python_path)
+    mode = "bootstrap" if needs_bootstrap else "start"
+    if needs_bootstrap:
+        log("pybibx missing; first-run / post-install bootstrap will run inside launch_app.py")
+
+    loading_server = open_loading_page(base_dir, APP_PORT, mode=mode)
+    try:
+        return start_application(base_dir, mode=mode)
+    finally:
+        if loading_server is not None:
+            try:
+                loading_server.shutdown()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

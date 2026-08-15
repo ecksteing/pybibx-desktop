@@ -43,9 +43,9 @@ No. The installer includes a portable Python runtime. PyBibX and AI libraries (P
 
 Yes. This app launches the official pybibx Web App (`pybibx.web_app()`).
 
-#### Why is the first install/run slow?
+#### The app is slow to open after install?
 
-The setup exe stays relatively small. Heavy AI wheels download once and then stay on disk. Later launches are much faster.
+Yes, especially the first few launches. PyBibX pulls in large AI libraries (PyTorch and friends). The desktop wrapper shows a loading screen on **every** launch and only opens the app once the UI is ready. Later launches are usually faster once Windows has cached the libraries, but a cold start can still take a while.
 
 #### Is the latest version of pybibx included?
 
