@@ -1,0 +1,40 @@
+#
+# Build / packaging outputs
+Output/
+build/
+dist/
+*.spec
+*.exe
+_internal/
+
+# Bundled runtime (downloaded by scripts/prepare_python_portable.ps1)
+Python-Portable/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Local logs and stamps (created at runtime)
+*.log
+
+# Icon source / intermediates (keep app_icon.ico)
+app_icon_source.svg
+app_icon_512.svg
+app_icon_256.png
+app_icon_temp.png
+
+# OS / editor / local AI agent context (do not publish)
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/
+.cursor/
+*.swp
+
+# Temporary docs
+instructions.docx
+instructions.txt
