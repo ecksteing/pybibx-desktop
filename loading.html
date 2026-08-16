@@ -34,24 +34,11 @@
       font-family: monospace;
       font-size: clamp(1.15rem, 4.2vw, 1.85rem);
       line-height: 1.35;
-      color: #111;
-      text-shadow:
-        0 0 0 rgb(255 0 0),
-        0 0 0 rgb(0 255 0),
-        0 0 0 rgb(0 0 255);
-      animation: l32 1s infinite cubic-bezier(0.5, -2000, 0.5, 2000);
+      color: #000000;
     }
     .loader::before {
       content: attr(data-label);
       white-space: pre-wrap;
-    }
-    @keyframes l32 {
-      25%, 100% {
-        text-shadow:
-          0.03px -0.01px 0.01px rgb(255 0 0),
-          0.02px 0.02px 0 rgb(0 255 0),
-          -0.02px 0.02px 0 rgb(0 0 255);
-      }
     }
     .status {
       margin-top: 8px;
@@ -100,7 +87,6 @@
       min-height: 1em;
     }
     @media (prefers-reduced-motion: reduce) {
-      .loader { animation: none; text-shadow: none; }
       .bar.indeterminate > span { animation: none; width: 40%; }
     }
   </style>

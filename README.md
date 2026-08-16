@@ -44,7 +44,7 @@ Yes. This app launches the official pybibx Web App (`pybibx.web_app()`).
 
 #### The app is slow to open after install?
 
-Yes, especially the first few launches. There is alot of code to install and run. Later launches are usually faster once Windows has cached the code, but a cold start can still take a while.
+First launch installs **core** libraries first so the web UI can open sooner, then downloads heavy AI wheels (PyTorch, transformers, BERTopic, …) **in the background**. Basic bibliometric tools work once the UI opens; AI features (topic modelling, embeddings, LLM helpers) become available after that background install finishes (progress is logged in `%LOCALAPPDATA%\PyBibX Desktop\runtime.log`). Later launches are much faster once packages are cached.
 
 #### Is the latest version of pybibx included?
 

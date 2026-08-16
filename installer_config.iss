@@ -54,7 +54,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "bootstrap"; Description: "Download PyBibX and AI libraries now (recommended; requires internet)"; GroupDescription: "Runtime setup:"; Flags: checkedonce
+Name: "bootstrap"; Description: "Download core PyBibX libraries now (recommended; AI libraries finish on first launch)"; GroupDescription: "Runtime setup:"; Flags: checkedonce
 
 [Files]
 Source: "run_pybibx.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -77,10 +77,10 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app_icon.ico"; Tasks: desktopicon
 
 [Run]
-; Heavy one-time download (torch / transformers / pybibx). Can take several minutes.
+; Heavy one-time download of core libs. AI/Torch finish on first launch in the background.
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\bootstrap_runtime.ps1"" -AppDir ""{app}"""; \
-  StatusMsg: "Downloading PyBibX and AI libraries (one-time; may take several minutes)..."; \
+  StatusMsg: "Downloading core PyBibX libraries (AI packages finish on first launch)..."; \
   Flags: waituntilterminated; Tasks: bootstrap
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 

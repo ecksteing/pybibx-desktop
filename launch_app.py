@@ -198,9 +198,10 @@ def _record_update_check() -> None:
 
 
 def _pip_install(args: list[str], *, phase: str = "bootstrap", label: str = "Installing packages") -> int:
-    cmd = [sys.executable, "-m", "pip", "install", "--upgrade", *args]
+    cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--prefer-binary", *args]
     _log("Running: " + " ".join(cmd))
-    _status(label, " ".join(args[:3]), phase=phase)
+    detail = " ".join(a for a in args if not a.startswith("-"))[:80]
+    _status(label, detail, phase=phase)
 
     env = os.environ.copy()
     env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
@@ -241,19 +242,137 @@ def _pip_install(args: list[str], *, phase: str = "bootstrap", label: str = "Ins
     return int(proc.wait())
 
 
+# Enough for `import pybibx` + Flask web UI (AI/torch are deferred).
+_CRITICAL_PACKAGES = [
+    "flask",
+    "werkzeug",
+    "plotly",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scipy",
+    "scikit-learn",
+    "networkx",
+    "Pillow",
+    "chardet",
+    "numba",
+    "wordcloud",
+]
+
+_AI_PACKAGES = [
+    "bertopic",
+    "bert-extractive-summarizer",
+    "sentence-transformers",
+    "transformers",
+    "sentencepiece",
+    "umap-learn",
+    "keybert",
+    "openai",
+    "google-generativeai",
+    "llmx",
+]
+
+
+def _portable_marker(name: str) -> Path:
+    return Path(sys.executable).resolve().parent / name
+
+
+def _can_start_web_ui() -> bool:
+    """True when the Flask web app can be imported (critical deps present)."""
+    try:
+        import pybibx  # noqa: F401
+        from pybibx.base import app as _app  # noqa: F401
+
+        return True
+    except Exception as exc:
+        _log(f"Web UI not ready yet: {exc}")
+        return False
+
+
+def _ai_stack_ready() -> bool:
+    try:
+        import bertopic  # noqa: F401
+        import sentence_transformers  # noqa: F401
+        import torch  # noqa: F401
+        import transformers  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
+def _mark_file(name: str) -> None:
+    try:
+        _portable_marker(name).write_text(
+            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            encoding="ascii",
+        )
+    except OSError as exc:
+        _log(f"Could not write {name}: {exc}")
+
+
 def ensure_runtime_ready() -> bool:
-    """Install pybibx (+ CPU torch) if missing. Returns True when importable."""
-    if _installed_pybibx_version():
+    """
+    Install only what is needed to open the pybibx web UI.
+    Heavy AI wheels (PyTorch / transformers / BERTopic) install later in the background.
+    """
+    if _can_start_web_ui():
         _status("Checking installed packages", phase="start")
+        _mark_file("runtime_ui_ready.txt")
         return True
 
-    _log("pybibx not installed; bootstrapping runtime packages...")
+    _log("Installing critical packages for the web UI (AI stack deferred)...")
     _status(
-        "Downloading AI libraries (one-time)",
-        "This may take several minutes...",
+        "Installing core libraries",
+        "Flask, pandas, plotly, and friends — AI packages load after the app opens…",
         phase="bootstrap",
     )
-    # CPU wheels first so students avoid multi-GB CUDA builds.
+
+    code = _pip_install(
+        ["pybibx", "--no-deps"],
+        phase="bootstrap",
+        label="Installing pybibx package",
+    )
+    if code != 0:
+        _log(f"pip install pybibx --no-deps failed with exit code {code}")
+        _status("Package install failed", f"Exit code {code}", phase="error")
+        return False
+
+    code = _pip_install(
+        list(_CRITICAL_PACKAGES),
+        phase="bootstrap",
+        label="Installing critical libraries",
+    )
+    if code != 0:
+        _log(f"Critical package install failed with exit code {code}")
+        _status("Package install failed", f"Exit code {code}", phase="error")
+        return False
+
+    if not _can_start_web_ui():
+        _log("Critical packages installed but web UI still will not import.")
+        _status("Package install incomplete", "Web UI import still failing", phase="error")
+        return False
+
+    _mark_file("runtime_ui_ready.txt")
+    _status("Core ready — starting app", phase="start", percent=100.0)
+    return True
+
+
+def install_ai_stack_background() -> None:
+    """Finish Torch + NLP/AI dependencies after the GUI is already up."""
+    if _ai_stack_ready():
+        _log("AI stack already present.")
+        _mark_file("runtime_ai_ready.txt")
+        _mark_file("runtime_ready.txt")
+        return
+
+    _log("Background AI install starting…")
+    _status(
+        "Installing AI libraries in background",
+        "You can use the app; topic modelling / LLM tools need these…",
+        phase="bootstrap",
+    )
+
     code = _pip_install(
         [
             "torch",
@@ -266,31 +385,32 @@ def ensure_runtime_ready() -> bool:
         label="Downloading PyTorch (CPU)",
     )
     if code != 0:
-        _log(f"CPU torch install exited with {code}; continuing with default PyPI torch.")
+        _log(f"CPU torch install exited with {code}; trying default PyPI torch.")
 
     code = _pip_install(
-        ["pybibx"],
+        list(_AI_PACKAGES),
         phase="bootstrap",
-        label="Downloading pybibx and dependencies",
+        label="Installing AI / NLP libraries",
     )
     if code != 0:
-        _log(f"pip install pybibx failed with exit code {code}")
-        _status("Package install failed", f"Exit code {code}", phase="error")
-        return False
+        _log(f"AI package install exited with {code}; trying full pybibx resolve.")
+        _pip_install(["pybibx"], phase="bootstrap", label="Completing pybibx dependencies")
 
-    _status("Packages ready", phase="start", percent=100.0)
-    # Byte-compile for snappier subsequent imports.
-    try:
-        import compileall
-        from pathlib import Path as _Path
+    if _ai_stack_ready() or _installed_pybibx_version():
+        _mark_file("runtime_ai_ready.txt")
+        _mark_file("runtime_ready.txt")
+        _log("Background AI install finished.")
+        try:
+            import compileall
+            from pathlib import Path as _Path
 
-        site = _Path(sys.executable).resolve().parent / "Lib" / "site-packages"
-        if site.is_dir():
-            _status("Optimizing installed packages", phase="start")
-            compileall.compile_dir(str(site), quiet=1, workers=0)
-    except Exception as exc:
-        _log(f"compileall skipped: {exc}")
-    return _installed_pybibx_version() is not None
+            site = _Path(sys.executable).resolve().parent / "Lib" / "site-packages"
+            if site.is_dir():
+                compileall.compile_dir(str(site), quiet=1, workers=0)
+        except Exception as exc:
+            _log(f"compileall skipped: {exc}")
+    else:
+        _log("Background AI install finished with missing imports; will retry next launch.")
 
 
 def maybe_update_pybibx() -> None:
@@ -346,8 +466,8 @@ def start_web_app() -> str:
     }
 
     _status(
-        "Loading AI libraries",
-        "Importing pybibx / PyTorch (this is the slow part on each launch)...",
+        "Starting PyBibX",
+        "Loading the web interface…",
         phase="start",
     )
     import pybibx
@@ -376,6 +496,16 @@ def main() -> int:
         _log(f"Failed to start pybibx web app: {exc}")
         _status("Failed to start web app", str(exc), phase="error")
         return 1
+
+    # Heavy AI wheels continue after the UI is up.
+    try:
+        threading.Thread(
+            target=install_ai_stack_background,
+            name="pybibx-ai-install",
+            daemon=True,
+        ).start()
+    except Exception as exc:
+        _log(f"Could not start background AI installer: {exc}")
 
     try:
         while True:
