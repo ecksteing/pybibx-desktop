@@ -1,18 +1,18 @@
 # PyBibX Desktop
 
-An easy way to run [pybibx](https://github.com/Valdecy/pybibx) on Windows. ➡️ [Install PyBibX Desktop](https://github.com/ecksteing/pybibx-desktop/releases) and run. No separate Python install needed.
+An easy way to run [PyBibX](https://github.com/Valdecy/pybibx) on Windows. ➡️ [Install PyBibX Desktop](https://github.com/ecksteing/pybibx-desktop/releases) and run. No separate Python install needed.
 
-> **Platform note:** The current release targets **Windows**. macOS and Linux versions are planned for later.
+> **Platform note:** The current release is for **Windows**. macOS and Linux versions are planned for later.
 
 ## Why this tool?
 
-pybibx is excellent for bibliometric and scientometric analysis (including a browser-based Web App), but installing Python and dependencies is a hurdle for students. This project ships a one-click wrapper: install, then run.
+PyBibX is excellent for bibliometric and scientometric analysis (including a browser-based Web App), but installing Python and dependencies is a hurdle for students. This project ships a one-click wrapper: install, then run.
 
 ## Installation (end users)
 
 1. [Download the latest release](https://github.com/ecksteing/pybibx-desktop/releases).
 2. Install.
-4. Start **PyBibX Desktop** from the Start Menu or desktop shortcut. The pybibx Web App opens in your browser.
+4. Start **PyBibX Desktop** from the Start Menu or desktop shortcut. PyBibX opens in your browser.
 
 Logs (if something goes wrong) are written to `%LOCALAPPDATA%\PyBibX Desktop\launcher.log` (and `bootstrap.log` / `runtime.log` in the same folder).
 
@@ -40,15 +40,15 @@ No. Just download and run the app.
 
 #### Do I get the same features as pybibx?
 
-Yes. This app launches the official pybibx Web App (`pybibx.web_app()`).
+Yes. This app launches the official PyBibX Web App (`pybibx.web_app()`).
 
 #### The app is slow to open after install?
 
-Release builds ship with **core** libraries already baked in, so the web UI should open relatively quickly. First launch then downloads heavy AI wheels (PyTorch, transformers, BERTopic, …) **in the background**. Basic bibliometric tools work once the UI opens; AI features (topic modelling, embeddings, LLM helpers) become available after that background install finishes (progress is logged in `%LOCALAPPDATA%\PyBibX Desktop\runtime.log`). Later launches are faster once AI packages are cached.
+Release builds ship with **core** libraries included, so the web UI should open relatively quickly. First launch then downloads heavy Python packages (PyTorch, transformers, BERTopic, …) **in the background**. Basic bibliometric tools work once the UI opens; AI features (topic modelling, embeddings, LLM helpers) become available after that background install finishes (progress is logged in `%LOCALAPPDATA%\PyBibX Desktop\runtime.log`). Later launches are faster once AI packages are cached.
 
 #### Is the latest version of pybibx included?
 
-Each desktop release ships with a pybibx. When online, the app checks for a newer version weekly. If you are offline, the already-installed copy still runs.
+Each desktop release ships with PyBibX. When online, the app checks for a newer version weekly. If you are offline, the already-installed copy still runs.
 
 #### Why did you create this tool?
 
@@ -56,16 +56,16 @@ I am a university lecturer. I encourage students to use bibliometric tools for l
 
 ## Licence
 
-This project is distributed under the [GNU GPL v3](LICENSE). pybibx and its dependencies retain their own licences; see upstream projects for details.
+This project is distributed under the [GNU GPL v3](LICENSE). PyBibX and its dependencies retain their own licences; see upstream projects for details.
 
 ## Support
 
 - Installer / desktop wrapper: [GitHub Issues](https://github.com/ecksteing/pybibx-desktop/issues)
-- pybibx itself: contact the pybibx authors / [upstream repo](https://github.com/Valdecy/pybibx)
+- PyBibX itself: contact the pybibx authors / [upstream repo](https://github.com/Valdecy/pybibx)
 
 ## Acknowledgements
 
-- [pybibx](https://github.com/Valdecy/pybibx) by Valdecy Pereira and colleagues
+- [PyBibX](https://github.com/Valdecy/pybibx) by Valdecy Pereira and colleagues
 - App icon adapted from Google Material Symbols **book_ribbon** (Apache 2.0)
 
 ## Building from source (maintainers)
