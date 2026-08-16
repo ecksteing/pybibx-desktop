@@ -1,22 +1,26 @@
 # scripts/build_windows.ps1
-# Prepare Python-Portable, build the onedir launcher, and compile the Inno Setup installer.
+# Prepare Python-Portable, bake critical packages, build the onedir launcher,
+# and compile the Inno Setup installer.
 #
 # Prerequisites:
 #   - Python with PyInstaller (pip install -r requirements-build.txt) for packaging the launcher
 #   - Inno Setup 7+ (ISCC.exe) preferred; 6+ also works
-#   - Internet access to download the embeddable Python runtime
+#   - Internet access to download embeddable Python + critical PyPI wheels
 #
-# The setup exe stays relatively small: heavy AI wheels download during install
-# (or on first launch) via scripts/bootstrap_runtime.ps1.
+# The setup exe includes baked core libraries (numpy, pandas, flask, …).
+# Heavy AI wheels (torch / transformers / BERTopic) still install on first launch
+# in the background.
 #
 # Usage (from repo root):
 #   powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1
 #   powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -SkipPreparePython
+#   powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -SkipBake
 #   powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -SkipInstaller
 
 [CmdletBinding()]
 param(
     [switch]$SkipPreparePython,
+    [switch]$SkipBake,
     [switch]$SkipInstaller,
     [string]$PythonVersion = "3.12.10"
 )
@@ -72,6 +76,19 @@ if (-not $SkipPreparePython) {
     }
 }
 
+if (-not $SkipBake) {
+    Write-Host "==> Baking critical packages into Python-Portable..."
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\bake_critical_packages.ps1")
+    if ($LASTEXITCODE -ne 0) {
+        throw "bake_critical_packages.ps1 failed with exit code $LASTEXITCODE"
+    }
+} else {
+    Write-Host "==> Skipping critical bake (-SkipBake)"
+    if (-not (Test-Path (Join-Path $Root "Python-Portable\BAKED_CRITICAL.txt"))) {
+        Write-Host "WARNING: no BAKED_CRITICAL.txt - installer may force users through a long first-run pip."
+    }
+}
+
 Write-Host "==> Installing/upgrading PyInstaller..."
 python -m pip install --upgrade -r (Join-Path $Root "requirements-build.txt")
 
@@ -124,10 +141,12 @@ if (-not (Test-Path $setup)) {
     throw "Expected installer not found: $setup"
 }
 
+$setupMb = [math]::Round((Get-Item $setup).Length / 1MB, 1)
+
 Write-Host ""
 Write-Host "Build complete:"
 Write-Host "  Launcher : $exeRoot"
-Write-Host "  Installer: $setup"
+Write-Host "  Installer: $setup (${setupMb} MB)"
 Write-Host ""
-Write-Host "Note: the setup exe downloads pybibx/torch during install (internet required)."
+Write-Host "Note: core libraries are baked into Python-Portable; AI wheels still download on first launch."
 Write-Host "Next: test on a clean Windows account, then upload the installer to GitHub Releases."

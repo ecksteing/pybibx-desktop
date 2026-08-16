@@ -1,8 +1,8 @@
 # scripts/prepare_python_portable.ps1
 # Download the official Windows embeddable Python package and enable pip.
 #
-# The installer ships this lean runtime. PyBibX / PyTorch / transformers are
-# downloaded during install (or on first launch) via bootstrap_runtime.ps1.
+# build_windows.ps1 then bakes critical packages via bake_critical_packages.ps1.
+# Torch / transformers / BERTopic still install on first launch (background).
 #
 # Usage (from repo root):
 #   powershell -ExecutionPolicy Bypass -File .\scripts\prepare_python_portable.ps1
@@ -121,4 +121,4 @@ Set-Content -LiteralPath $versionFile -Value $PythonVersion -Encoding ascii
 Write-Host ""
 Write-Host "Python-Portable ready:"
 Write-Host "  $python"
-Write-Host "  (pybibx / torch are installed later by bootstrap_runtime.ps1)"
+Write-Host "  Next: bake_critical_packages.ps1 (or build_windows.ps1)"

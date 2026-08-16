@@ -1,11 +1,11 @@
 ; installer_config.iss
 ; Builds the Windows installer for PyBibX Desktop.
 ; Prerequisites: PyInstaller --onedir output staged as run_pybibx.exe +
-; _internal\ at the repo root, and a lean Python-Portable prepared with
-; scripts/prepare_python_portable.ps1 (no heavy AI wheels baked in).
+; _internal\ at the repo root, and Python-Portable prepared + critical-baked
+; (prepare_python_portable.ps1 then bake_critical_packages.ps1).
 ;
-; During install, bootstrap_runtime.ps1 downloads pybibx + CPU PyTorch / deps.
-; If that step is skipped or offline, the first app launch retries the download.
+; Core libs ship inside Python-Portable. Optional bootstrap task verifies /
+; repairs them. Torch / AI wheels still install on first launch (background).
 
 ; --- Read version dynamically from version.txt ---
 #define VerFile FileOpen("version.txt")
@@ -54,7 +54,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "bootstrap"; Description: "Download core PyBibX libraries now (recommended; AI libraries finish on first launch)"; GroupDescription: "Runtime setup:"; Flags: checkedonce
+Name: "bootstrap"; Description: "Verify core PyBibX libraries (quick if already baked; repairs if needed)"; GroupDescription: "Runtime setup:"; Flags: checkedonce
 
 [Files]
 Source: "run_pybibx.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -66,6 +66,7 @@ Source: "stop_pybibx.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; Also pack for ExtractTemporaryFile so upgrades use THIS script, not the old install's copy.
 Source: "stop_pybibx.ps1"; Flags: dontcopy
 Source: "scripts\bootstrap_runtime.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "scripts\critical_packages.txt"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "version.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
@@ -77,10 +78,10 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\app_icon.ico"; Tasks: desktopicon
 
 [Run]
-; Heavy one-time download of core libs. AI/Torch finish on first launch in the background.
+; Usually a quick verify (core libs are baked). AI/Torch finish on first launch.
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\bootstrap_runtime.ps1"" -AppDir ""{app}"""; \
-  StatusMsg: "Downloading core PyBibX libraries (AI packages finish on first launch)..."; \
+  StatusMsg: "Verifying core PyBibX libraries (AI packages finish on first launch)..."; \
   Flags: waituntilterminated; Tasks: bootstrap
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 

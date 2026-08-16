@@ -243,6 +243,7 @@ def _pip_install(args: list[str], *, phase: str = "bootstrap", label: str = "Ins
 
 
 # Enough for `import pybibx` + Flask web UI (AI/torch are deferred).
+# Keep in sync with scripts/critical_packages.txt (baked at build time).
 _CRITICAL_PACKAGES = [
     "flask",
     "werkzeug",

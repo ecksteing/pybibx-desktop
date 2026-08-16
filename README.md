@@ -44,7 +44,7 @@ Yes. This app launches the official pybibx Web App (`pybibx.web_app()`).
 
 #### The app is slow to open after install?
 
-First launch installs **core** libraries first so the web UI can open sooner, then downloads heavy AI wheels (PyTorch, transformers, BERTopic, …) **in the background**. Basic bibliometric tools work once the UI opens; AI features (topic modelling, embeddings, LLM helpers) become available after that background install finishes (progress is logged in `%LOCALAPPDATA%\PyBibX Desktop\runtime.log`). Later launches are much faster once packages are cached.
+Release builds ship with **core** libraries already baked in, so the web UI should open relatively quickly. First launch then downloads heavy AI wheels (PyTorch, transformers, BERTopic, …) **in the background**. Basic bibliometric tools work once the UI opens; AI features (topic modelling, embeddings, LLM helpers) become available after that background install finishes (progress is logged in `%LOCALAPPDATA%\PyBibX Desktop\runtime.log`). Later launches are faster once AI packages are cached.
 
 #### Is the latest version of pybibx included?
 
@@ -77,7 +77,7 @@ End users can ignore this section.
 - Windows x64
 - [Python 3](https://www.python.org/) + `pip install -r requirements-build.txt` (host machine; used only to package the launcher)
 - [Inno Setup 7+](https://jrsoftware.org/isinfo.php) (per-user or machine-wide install; 6+ also works)
-- Internet access to download the embeddable Python runtime (and, when testing install, the AI wheels)
+- Internet access to download the embeddable Python runtime and critical PyPI wheels (numpy, pandas, flask, …)
 
 ### One-shot Windows build
 
@@ -89,19 +89,22 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1
 
 This will:
 
-1. Download / prepare a lean `Python-Portable\` (embeddable CPython + pip)
-2. Compile the onedir launcher with PyInstaller (`--onedir --noconsole`) and stage `run_pybibx.exe` + `_internal\` at the repo root
-3. Compile `installer_config.iss` into `Output\PyBibXSetup_<version>.exe`
+1. Download / prepare `Python-Portable\` (embeddable CPython + pip)
+2. Bake critical packages into that portable runtime (`scripts/bake_critical_packages.ps1` + `scripts/critical_packages.txt`) — setup exe grows; first launch stays faster
+3. Compile the onedir launcher with PyInstaller (`--onedir --noconsole`) and stage `run_pybibx.exe` + `_internal\` at the repo root
+4. Compile `installer_config.iss` into `Output\PyBibXSetup_<version>.exe`
 
 Useful flags:
 
 - `-SkipPreparePython` — skip embeddable Python download (only if already prepared)
+- `-SkipBake` — skip critical package bake (not recommended for release builds)
 - `-SkipInstaller` — build the launcher exe only
 
 ### Manual steps (equivalent)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_python_portable.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\bake_critical_packages.ps1
 pip install -r requirements-build.txt
 pyinstaller --onedir --noconsole --icon=app_icon.ico --name run_pybibx run_pybibx.py
 # Copy dist\run_pybibx\run_pybibx.exe and dist\run_pybibx\_internal to the repo root,

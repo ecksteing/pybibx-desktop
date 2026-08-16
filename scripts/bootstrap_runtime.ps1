@@ -1,7 +1,8 @@
 # scripts/bootstrap_runtime.ps1
-# Install critical pybibx runtime packages into Python-Portable (fast path for the web UI).
-# Heavy AI wheels (PyTorch / transformers / BERTopic) are finished on first app launch
-# in the background so Setup and first paint stay responsive.
+# Repair / verify critical packages in an installed Python-Portable.
+# Release builds normally bake these at packaging time (bake_critical_packages.ps1);
+# this script is an optional installer task and offline-recovery path.
+# Heavy AI wheels still finish on first app launch in the background.
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap_runtime.ps1
@@ -64,10 +65,17 @@ if ($LASTEXITCODE -eq 0) {
         exit $LASTEXITCODE
     }
 
-    $critical = @(
-        "flask", "werkzeug", "plotly", "pandas", "numpy", "matplotlib",
-        "scipy", "scikit-learn", "networkx", "Pillow", "chardet", "numba", "wordcloud"
-    )
+    $pkgFile = Join-Path $PSScriptRoot "critical_packages.txt"
+    if (Test-Path $pkgFile) {
+        $critical = Get-Content -LiteralPath $pkgFile |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and -not $_.StartsWith("#") }
+    } else {
+        $critical = @(
+            "flask", "werkzeug", "plotly", "pandas", "numpy", "matplotlib",
+            "scipy", "scikit-learn", "networkx", "Pillow", "chardet", "numba", "wordcloud"
+        )
+    }
     & $Python -m pip install --upgrade --prefer-binary @critical --no-warn-script-location
     if ($LASTEXITCODE -ne 0) {
         Write-BootLog "Critical package install failed with exit code $LASTEXITCODE"

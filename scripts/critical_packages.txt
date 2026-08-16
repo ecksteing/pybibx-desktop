@@ -1,0 +1,16 @@
+# Core packages baked into Python-Portable at build time (one package per line).
+# Keep in sync with launch_app.py _CRITICAL_PACKAGES.
+# Heavy AI stacks (torch / transformers / BERTopic / …) are NOT listed here.
+flask
+werkzeug
+plotly
+pandas
+numpy
+matplotlib
+scipy
+scikit-learn
+networkx
+Pillow
+chardet
+numba
+wordcloud
