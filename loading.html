@@ -3,133 +3,58 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Loading PyBibX...</title>
+  <title>Loading PyBibX…</title>
   <style>
     :root {
-      --bg: #f4f7fb;
-      --card: #ffffff;
       --text: #1f2a37;
       --muted: #5b6b7c;
       --accent: #1f6f8b;
-      --ring: #d7e3ec;
       --track: #e8eef3;
-      --stick: #1f6f8b;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
+      display: grid;
+      place-items: center;
       font-family: "Segoe UI", Tahoma, sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(circle at top, #e7f2f7 0%, transparent 45%),
-        var(--bg);
-      overflow: hidden;
+      background: #ffffff;
     }
-    .layout {
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: 1fr auto auto;
-      align-items: end;
-      padding: 24px 16px 28px;
-    }
-    .stage {
-      position: relative;
-      height: 200px;
-      width: min(780px, 100%);
-      margin: 0 auto 6px;
-      overflow: hidden;
-    }
-    .ground {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 14px;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--ring) 12%, var(--ring) 88%, transparent);
-    }
-    #stickActor {
-      position: absolute;
-      bottom: 8px;
-      left: 0;
-      width: 220px;
-      height: 180px;
-      transform: translateX(0);
-      will-change: transform;
-      pointer-events: none;
-    }
-    #stickActor svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
-    #stickActor .limb,
-    #stickActor .prop-stroke {
-      fill: none;
-      stroke: var(--stick);
-      stroke-width: 4;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    #stickActor .head {
-      fill: none;
-      stroke: var(--stick);
-      stroke-width: 4;
-    }
-    #stickActor .prop-fill {
-      fill: none;
-      stroke: var(--stick);
-      stroke-width: 3;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      opacity: 0.92;
-    }
-    #stickActor .prop-text {
-      fill: var(--stick);
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      font-size: 10px;
-      font-weight: 700;
-    }
-    #stickActor .prop-group,
-    #stickActor .fig2 {
-      display: none;
-    }
-    #stickActor .prop-group.is-on,
-    #stickActor .fig2.is-on {
-      display: inline;
-    }
-    .act-label {
+    .wrap {
+      width: min(520px, calc(100vw - 32px));
       text-align: center;
-      font-size: 0.9rem;
-      color: var(--accent);
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      min-height: 1.2em;
-      margin-bottom: 10px;
+      padding: 24px 12px;
     }
-    .card {
-      width: min(480px, 100%);
-      margin: 0 auto;
-      background: var(--card);
-      border: 1px solid var(--ring);
-      border-radius: 16px;
-      padding: 28px 28px 24px;
-      text-align: center;
-      box-shadow: 0 12px 40px rgba(31, 42, 55, 0.08);
+    .loader {
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto 28px;
+      font-weight: bold;
+      font-family: monospace;
+      font-size: clamp(1.15rem, 4.2vw, 1.85rem);
+      line-height: 1.35;
+      color: #111;
+      text-shadow:
+        0 0 0 rgb(255 0 0),
+        0 0 0 rgb(0 255 0),
+        0 0 0 rgb(0 0 255);
+      animation: l32 1s infinite cubic-bezier(0.5, -2000, 0.5, 2000);
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 1.35rem;
-      font-weight: 650;
+    .loader::before {
+      content: attr(data-label);
+      white-space: pre-wrap;
     }
-    p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 0.98rem;
+    @keyframes l32 {
+      25%, 100% {
+        text-shadow:
+          0.03px -0.01px 0.01px rgb(255 0 0),
+          0.02px 0.02px 0 rgb(0 255 0),
+          -0.02px 0.02px 0 rgb(0 0 255);
+      }
     }
     .status {
-      margin-top: 18px;
+      margin-top: 8px;
       font-size: 0.95rem;
       color: var(--accent);
       min-height: 1.2em;
@@ -144,8 +69,9 @@
       font-family: Consolas, "Courier New", monospace;
     }
     .bar {
-      margin-top: 18px;
+      margin: 18px auto 0;
       height: 8px;
+      width: min(360px, 100%);
       border-radius: 999px;
       background: var(--track);
       overflow: hidden;
@@ -174,104 +100,19 @@
       min-height: 1em;
     }
     @media (prefers-reduced-motion: reduce) {
-      #stickActor { display: none; }
-      .act-label { display: none; }
-      .stage { height: 0; margin: 0; }
+      .loader { animation: none; text-shadow: none; }
+      .bar.indeterminate > span { animation: none; width: 40%; }
     }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <div></div>
-    <div>
-      <div class="stage" aria-hidden="true">
-        <div class="ground"></div>
-        <div id="stickActor">
-          <svg viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg">
-            <!-- Scene props -->
-            <g id="propCollect" class="prop-group">
-              <rect class="prop-fill" x="150" y="118" width="22" height="28" rx="1" />
-              <rect class="prop-fill" x="156" y="112" width="22" height="28" rx="1" />
-              <rect class="prop-fill" x="162" y="106" width="22" height="28" rx="1" id="paperTop" />
-              <text class="prop-text" x="166" y="122">PDF</text>
-            </g>
-            <g id="propClean" class="prop-group">
-              <path class="prop-fill" d="M150 90 L180 90 L170 130 L160 130 Z" />
-              <line class="prop-stroke" x1="165" y1="90" x2="165" y2="78" />
-              <circle class="prop-fill" cx="148" cy="140" r="3" id="dirt1" />
-              <circle class="prop-fill" cx="188" cy="138" r="2.5" id="dirt2" />
-              <circle class="prop-fill" cx="170" cy="146" r="2" id="dirt3" />
-            </g>
-            <g id="propCite" class="prop-group">
-              <line class="prop-stroke" x1="145" y1="145" x2="200" y2="145" />
-              <line class="prop-stroke" x1="145" y1="145" x2="145" y2="85" />
-              <rect class="prop-fill" x="152" y="120" width="10" height="25" id="bar1" />
-              <rect class="prop-fill" x="168" y="105" width="10" height="40" id="bar2" />
-              <rect class="prop-fill" x="184" y="95" width="10" height="50" id="bar3" />
-            </g>
-            <g id="propNetwork" class="prop-group">
-              <circle class="prop-fill" cx="130" cy="100" r="5" />
-              <circle class="prop-fill" cx="170" cy="90" r="5" />
-              <circle class="prop-fill" cx="185" cy="125" r="5" />
-              <circle class="prop-fill" cx="145" cy="135" r="5" />
-              <line class="prop-stroke" x1="130" y1="100" x2="170" y2="90" id="netL1" />
-              <line class="prop-stroke" x1="170" y1="90" x2="185" y2="125" id="netL2" />
-              <line class="prop-stroke" x1="185" y1="125" x2="145" y2="135" id="netL3" />
-              <line class="prop-stroke" x1="145" y1="135" x2="130" y2="100" id="netL4" />
-              <line class="prop-stroke" x1="130" y1="100" x2="185" y2="125" id="netL5" />
-            </g>
-            <g id="propKeywords" class="prop-group">
-              <text class="prop-text" id="kw1" x="140" y="95">citation</text>
-              <text class="prop-text" id="kw2" x="160" y="115" font-size="13">network</text>
-              <text class="prop-text" id="kw3" x="145" y="135">topic</text>
-              <text class="prop-text" id="kw4" x="175" y="145">trend</text>
-            </g>
-            <g id="propViz" class="prop-group">
-              <rect class="prop-fill" x="140" y="88" width="60" height="50" rx="3" />
-              <polyline class="prop-fill" id="spark" points="148,125 158,110 168,118 178,98 188,105" />
-              <circle class="prop-fill" cx="158" cy="110" r="2.5" />
-              <circle class="prop-fill" cx="178" cy="98" r="2.5" />
-            </g>
-            <g id="propInterpret" class="prop-group">
-              <circle class="prop-fill" cx="165" cy="105" r="14" />
-              <line class="prop-stroke" x1="175" y1="115" x2="190" y2="132" />
-              <polyline class="prop-fill" points="145,145 155,130 165,138 175,118 188,125" id="trendLine" />
-              <text class="prop-text" x="148" y="88">gap?</text>
-            </g>
-
-            <!-- Main researcher -->
-            <g id="figure">
-              <circle class="head" id="head" cx="60" cy="36" r="10" />
-              <line class="limb" id="torso" x1="60" y1="46" x2="60" y2="88" />
-              <line class="limb" id="armL" x1="60" y1="58" x2="42" y2="78" />
-              <line class="limb" id="armR" x1="60" y1="58" x2="78" y2="78" />
-              <line class="limb" id="legL" x1="60" y1="88" x2="48" y2="122" />
-              <line class="limb" id="legR" x1="60" y1="88" x2="72" y2="122" />
-            </g>
-
-            <!-- Collaborator (networks scene) -->
-            <g id="figure2" class="fig2">
-              <circle class="head" id="head2" cx="110" cy="40" r="9" />
-              <line class="limb" id="torso2" x1="110" y1="49" x2="110" y2="86" />
-              <line class="limb" id="armL2" x1="110" y1="60" x2="94" y2="76" />
-              <line class="limb" id="armR2" x1="110" y1="60" x2="126" y2="76" />
-              <line class="limb" id="legL2" x1="110" y1="86" x2="100" y2="118" />
-              <line class="limb" id="legR2" x1="110" y1="86" x2="120" y2="118" />
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="act-label" id="actLabel">Preparing bibliometric workflow...</div>
-    </div>
-    <main class="card">
-      <h1>Starting PyBibX</h1>
-      <p id="blurb">Please wait while PyBibX Desktop prepares the app. The first run can take several minutes while AI libraries download.</p>
-      <div class="status" id="status">Checking for the app...</div>
-      <div class="detail" id="detail"></div>
-      <div class="bar indeterminate" id="bar" aria-hidden="true"><span id="barFill"></span></div>
-      <div class="pct" id="pct"></div>
-    </main>
-  </div>
+  <main class="wrap">
+    <div class="loader" id="funLoader" data-label="Loading ..." aria-live="polite"></div>
+    <div class="status" id="status">Checking for the app…</div>
+    <div class="detail" id="detail"></div>
+    <div class="bar indeterminate" id="bar" aria-hidden="true"><span id="barFill"></span></div>
+    <div class="pct" id="pct"></div>
+  </main>
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
@@ -279,23 +120,32 @@
       var mode = params.get("mode") || "start";
       var statusEl = document.getElementById("status");
       var detailEl = document.getElementById("detail");
-      var blurbEl = document.getElementById("blurb");
       var barEl = document.getElementById("bar");
       var barFill = document.getElementById("barFill");
       var pctEl = document.getElementById("pct");
+      var funLoader = document.getElementById("funLoader");
       var redirected = false;
 
+      var funLabels = [
+        "Loading ...",
+        "Still going ...",
+        "It takes awhile but it'll be good ...",
+        "Getting things ready ...",
+        "Hold tight ..."
+      ];
+      var funIndex = 0;
+      funLoader.setAttribute("data-label", funLabels[0]);
+      setInterval(function () {
+        funIndex = (funIndex + 1) % funLabels.length;
+        funLoader.setAttribute("data-label", funLabels[funIndex]);
+      }, 20000);
+
       if (mode === "bootstrap") {
-        blurbEl.textContent =
-          "Downloading PyBibX and AI libraries (one-time). This needs internet and may take several minutes.";
-        statusEl.textContent = "Installing packages...";
+        statusEl.textContent = "Installing packages…";
       } else if (mode === "reopen") {
-        blurbEl.textContent = "PyBibX is already running. Taking you to the app...";
-        statusEl.textContent = "Reopening...";
+        statusEl.textContent = "Reopening…";
       } else {
-        blurbEl.textContent =
-          "Please wait while PyBibX Desktop warms up. Loading AI libraries can take up to a minute even after install.";
-        statusEl.textContent = "Loading libraries...";
+        statusEl.textContent = "Loading libraries…";
       }
 
       function setProgress(percent) {
@@ -331,7 +181,7 @@
           .then(function (data) {
             if (data && data.ready) {
               redirected = true;
-              statusEl.textContent = "Opening PyBibX...";
+              statusEl.textContent = "Opening PyBibX…";
               detailEl.textContent = "";
               setProgress(100);
               window.location.replace(target);
@@ -345,213 +195,6 @@
       refreshStatus();
       setInterval(refreshStatus, 600);
       probe();
-
-      var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduceMotion) return;
-
-      var actor = document.getElementById("stickActor");
-      var stage = actor.parentElement;
-      var label = document.getElementById("actLabel");
-      var head = document.getElementById("head");
-      var torso = document.getElementById("torso");
-      var armL = document.getElementById("armL");
-      var armR = document.getElementById("armR");
-      var legL = document.getElementById("legL");
-      var legR = document.getElementById("legR");
-      var fig2 = document.getElementById("figure2");
-      var head2 = document.getElementById("head2");
-      var torso2 = document.getElementById("torso2");
-      var armL2 = document.getElementById("armL2");
-      var armR2 = document.getElementById("armR2");
-      var legL2 = document.getElementById("legL2");
-      var legR2 = document.getElementById("legR2");
-
-      var propIds = [
-        "propCollect", "propClean", "propCite", "propNetwork",
-        "propKeywords", "propViz", "propInterpret"
-      ];
-
-      // Sequential bibliometric workflow (order matters)
-      var acts = [
-        { id: "collect", label: "Collecting records...", duration: 16000, speed: 42, props: ["propCollect"], duo: false },
-        { id: "clean", label: "Cleaning and preprocessing data...", duration: 16000, speed: 18, props: ["propClean"], duo: false },
-        { id: "cite", label: "Analyzing productivity and citations...", duration: 16000, speed: 16, props: ["propCite"], duo: false },
-        { id: "network", label: "Building collaboration networks...", duration: 17000, speed: 22, props: ["propNetwork"], duo: true },
-        { id: "keywords", label: "Performing keyword and thematic analyses...", duration: 16000, speed: 14, props: ["propKeywords"], duo: false },
-        { id: "viz", label: "Generating visualizations...", duration: 16000, speed: 20, props: ["propViz"], duo: false },
-        { id: "interpret", label: "Interpreting trends and research gaps...", duration: 17000, speed: 12, props: ["propInterpret"], duo: false }
-      ];
-
-      var actIndex = 0;
-      var actStarted = performance.now();
-      var x = 40;
-      var dir = 1;
-      var last = performance.now();
-
-      function setLine(el, x1, y1, x2, y2) {
-        el.setAttribute("x1", x1);
-        el.setAttribute("y1", y1);
-        el.setAttribute("x2", x2);
-        el.setAttribute("y2", y2);
-      }
-
-      function showProps(list, duo) {
-        for (var i = 0; i < propIds.length; i++) {
-          var el = document.getElementById(propIds[i]);
-          if (!el) continue;
-          if (list.indexOf(propIds[i]) >= 0) el.classList.add("is-on");
-          else el.classList.remove("is-on");
-        }
-        if (duo) fig2.classList.add("is-on");
-        else fig2.classList.remove("is-on");
-      }
-
-      function standBase(bounce) {
-        head.setAttribute("cx", "60");
-        head.setAttribute("cy", String(36 - bounce * 0.3));
-        setLine(torso, 60, 46 - bounce * 0.2, 60, 88 - bounce);
-        setLine(legL, 60, 88 - bounce, 48, 122 - bounce);
-        setLine(legR, 60, 88 - bounce, 72, 122 - bounce);
-      }
-
-      function pose(act, t) {
-        var swing, bounce, reach;
-
-        if (act === "collect") {
-          // Carry papers while walking / stacking into a pile
-          swing = Math.sin(t * 7) * 14;
-          bounce = Math.abs(Math.sin(t * 7)) * 2;
-          standBase(bounce);
-          setLine(armL, 60, 58, 44, 78 - swing * 0.3);
-          setLine(armR, 60, 58, 92, 70 + Math.sin(t * 5) * 4);
-          var paper = document.getElementById("paperTop");
-          if (paper) paper.setAttribute("y", String(106 + Math.sin(t * 3) * 2));
-        } else if (act === "clean") {
-          // Scrub / shake funnel of messy data
-          bounce = Math.abs(Math.sin(t * 6)) * 2;
-          standBase(bounce);
-          reach = Math.sin(t * 5) * 10;
-          setLine(armL, 60, 58, 78 + reach, 70);
-          setLine(armR, 60, 58, 95, 85 + Math.sin(t * 5) * 6);
-          ["dirt1", "dirt2", "dirt3"].forEach(function (id, i) {
-            var d = document.getElementById(id);
-            if (!d) return;
-            d.setAttribute("opacity", String(0.35 + 0.65 * Math.abs(Math.sin(t * 3 + i))));
-            d.setAttribute("cy", String(138 + i * 3 + Math.sin(t * 4 + i) * 4));
-          });
-        } else if (act === "cite") {
-          // Point at growing citation bars
-          bounce = Math.abs(Math.sin(t * 2)) * 1.5;
-          standBase(bounce);
-          setLine(armL, 60, 58, 48, 78);
-          setLine(armR, 60, 58, 100, 100 + Math.sin(t * 3) * 6);
-          var h1 = 20 + (Math.sin(t * 1.5) * 0.5 + 0.5) * 10;
-          var h2 = 30 + (Math.sin(t * 1.5 + 1) * 0.5 + 0.5) * 14;
-          var h3 = 40 + (Math.sin(t * 1.5 + 2) * 0.5 + 0.5) * 12;
-          var b1 = document.getElementById("bar1");
-          var b2 = document.getElementById("bar2");
-          var b3 = document.getElementById("bar3");
-          if (b1) { b1.setAttribute("height", String(h1)); b1.setAttribute("y", String(145 - h1)); }
-          if (b2) { b2.setAttribute("height", String(h2)); b2.setAttribute("y", String(145 - h2)); }
-          if (b3) { b3.setAttribute("height", String(h3)); b3.setAttribute("y", String(145 - h3)); }
-        } else if (act === "network") {
-          // Two researchers linking a collaboration graph
-          swing = Math.sin(t * 4) * 8;
-          bounce = Math.abs(Math.sin(t * 4)) * 1.5;
-          standBase(bounce);
-          setLine(armL, 60, 58, 48, 76);
-          setLine(armR, 60, 58, 88 + swing * 0.3, 70);
-          head2.setAttribute("cy", String(40 - bounce * 0.3));
-          setLine(torso2, 110, 49, 110, 86);
-          setLine(armL2, 110, 60, 88 - swing * 0.2, 72);
-          setLine(armR2, 110, 60, 128, 78);
-          setLine(legL2, 110, 86, 100, 118);
-          setLine(legR2, 110, 86, 120, 118);
-          var pulse = 0.45 + 0.55 * Math.abs(Math.sin(t * 3));
-          ["netL1", "netL2", "netL3", "netL4", "netL5"].forEach(function (id, i) {
-            var line = document.getElementById(id);
-            if (line) line.setAttribute("opacity", String(0.35 + 0.65 * Math.abs(Math.sin(t * 2.5 + i))));
-          });
-          void pulse;
-        } else if (act === "keywords") {
-          // Sorting / tagging floating keywords
-          bounce = Math.abs(Math.sin(t * 3)) * 1.5;
-          standBase(bounce);
-          setLine(armL, 60, 58, 80, 72 + Math.sin(t * 4) * 5);
-          setLine(armR, 60, 58, 100, 88 + Math.sin(t * 4 + 1) * 5);
-          ["kw1", "kw2", "kw3", "kw4"].forEach(function (id, i) {
-            var kw = document.getElementById(id);
-            if (!kw) return;
-            var baseY = [95, 115, 135, 145][i];
-            kw.setAttribute("y", String(baseY + Math.sin(t * 2.2 + i) * 5));
-            kw.setAttribute("opacity", String(0.45 + 0.55 * Math.abs(Math.sin(t * 1.8 + i))));
-          });
-        } else if (act === "viz") {
-          // Draw a chart on a canvas / screen
-          bounce = Math.abs(Math.sin(t * 5)) * 1.5;
-          standBase(bounce);
-          setLine(armL, 60, 58, 50, 78);
-          setLine(armR, 60, 58, 112, 108 + Math.sin(t * 6) * 4);
-          var spark = document.getElementById("spark");
-          if (spark) {
-            var y1 = 125 + Math.sin(t * 2) * 3;
-            var y2 = 110 + Math.sin(t * 2 + 1) * 4;
-            var y3 = 118 + Math.sin(t * 2 + 2) * 3;
-            var y4 = 98 + Math.sin(t * 2 + 3) * 5;
-            var y5 = 105 + Math.sin(t * 2 + 4) * 3;
-            spark.setAttribute("points", "148," + y1 + " 158," + y2 + " 168," + y3 + " 178," + y4 + " 188," + y5);
-          }
-        } else if (act === "interpret") {
-          // Study trends with a magnifying glass
-          bounce = Math.abs(Math.sin(t * 1.8)) * 1.2;
-          standBase(bounce);
-          setLine(armL, 60, 58, 48, 76);
-          setLine(armR, 60, 58, 118, 100 + Math.sin(t * 2) * 4);
-          var trend = document.getElementById("trendLine");
-          if (trend) {
-            var a = 130 + Math.sin(t) * 3;
-            var b = 138 + Math.sin(t + 1) * 3;
-            var c = 118 + Math.sin(t + 2) * 4;
-            trend.setAttribute("points", "145,145 155," + a + " 165," + b + " 175," + c + " 188,125");
-          }
-        } else {
-          standBase(0);
-          setLine(armL, 60, 58, 42, 78);
-          setLine(armR, 60, 58, 78, 78);
-        }
-      }
-
-      function applyAct(act) {
-        label.textContent = act.label;
-        showProps(act.props || [], !!act.duo);
-        dir = 1;
-      }
-
-      function tick(now) {
-        var dt = Math.min(0.05, (now - last) / 1000);
-        last = now;
-        var act = acts[actIndex];
-        if (now - actStarted > act.duration) {
-          actIndex = (actIndex + 1) % acts.length;
-          act = acts[actIndex];
-          actStarted = now;
-          applyAct(act);
-        }
-
-        var maxX = Math.max(20, stage.clientWidth - 230);
-        x += dir * act.speed * dt;
-        if (x >= maxX) { x = maxX; dir = -1; }
-        if (x <= 0) { x = 0; dir = 1; }
-
-        // Keep text/props readable: only flip for walking collection
-        var flip = (act.id === "collect") ? dir : 1;
-        actor.style.transform = "translateX(" + x + "px) scaleX(" + flip + ")";
-        pose(act.id, now / 1000);
-        requestAnimationFrame(tick);
-      }
-
-      applyAct(acts[0]);
-      requestAnimationFrame(tick);
     })();
   </script>
 </body>
