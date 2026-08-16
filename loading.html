@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Loading PyBibX…</title>
+  <title>Loading PyBibX...</title>
   <style>
     :root {
       --bg: #f4f7fb;
@@ -35,8 +35,8 @@
     }
     .stage {
       position: relative;
-      height: 190px;
-      width: min(760px, 100%);
+      height: 200px;
+      width: min(780px, 100%);
       margin: 0 auto 6px;
       overflow: hidden;
     }
@@ -52,8 +52,8 @@
       position: absolute;
       bottom: 8px;
       left: 0;
-      width: 140px;
-      height: 170px;
+      width: 220px;
+      height: 180px;
       transform: translateX(0);
       will-change: transform;
       pointer-events: none;
@@ -82,26 +82,28 @@
       stroke-width: 3;
       stroke-linecap: round;
       stroke-linejoin: round;
-      opacity: 0.9;
+      opacity: 0.92;
     }
     #stickActor .prop-text {
       fill: var(--stick);
       font-family: "Segoe UI", Tahoma, sans-serif;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
     }
-    #stickActor .prop-group {
+    #stickActor .prop-group,
+    #stickActor .fig2 {
       display: none;
     }
-    #stickActor .prop-group.is-on {
+    #stickActor .prop-group.is-on,
+    #stickActor .fig2.is-on {
       display: inline;
     }
     .act-label {
       text-align: center;
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       color: var(--accent);
       font-weight: 600;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.01em;
       min-height: 1.2em;
       margin-bottom: 10px;
     }
@@ -185,78 +187,86 @@
       <div class="stage" aria-hidden="true">
         <div class="ground"></div>
         <div id="stickActor">
-          <svg viewBox="0 0 140 160" xmlns="http://www.w3.org/2000/svg">
-            <!-- props (toggled per activity) -->
-            <g id="propTree" class="prop-group">
-              <line class="prop-stroke" x1="118" y1="150" x2="118" y2="70" />
-              <circle class="prop-fill" cx="118" cy="58" r="22" />
-              <circle class="prop-fill" cx="104" cy="68" r="14" />
-              <circle class="prop-fill" cx="132" cy="66" r="14" />
+          <svg viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg">
+            <!-- Scene props -->
+            <g id="propCollect" class="prop-group">
+              <rect class="prop-fill" x="150" y="118" width="22" height="28" rx="1" />
+              <rect class="prop-fill" x="156" y="112" width="22" height="28" rx="1" />
+              <rect class="prop-fill" x="162" y="106" width="22" height="28" rx="1" id="paperTop" />
+              <text class="prop-text" x="166" y="122">PDF</text>
             </g>
-            <g id="propBoat" class="prop-group">
-              <path class="prop-fill" d="M18 128 Q70 148 122 128 L110 138 Q70 152 30 138 Z" />
-              <line class="prop-stroke" id="oar" x1="40" y1="100" x2="10" y2="128" />
+            <g id="propClean" class="prop-group">
+              <path class="prop-fill" d="M150 90 L180 90 L170 130 L160 130 Z" />
+              <line class="prop-stroke" x1="165" y1="90" x2="165" y2="78" />
+              <circle class="prop-fill" cx="148" cy="140" r="3" id="dirt1" />
+              <circle class="prop-fill" cx="188" cy="138" r="2.5" id="dirt2" />
+              <circle class="prop-fill" cx="170" cy="146" r="2" id="dirt3" />
             </g>
-            <g id="propDog" class="prop-group">
-              <!-- small dog running ahead: body, head, snout, ear, legs, tail -->
-              <ellipse class="prop-fill" cx="112" cy="136" rx="14" ry="7" />
-              <circle class="prop-fill" cx="126" cy="132" r="6" />
-              <line class="prop-stroke" x1="130" y1="132" x2="136" y2="134" />
-              <path class="prop-fill" d="M122 126 L126 118 L130 126" />
-              <line class="prop-stroke" x1="100" y1="132" x2="92" y2="124" />
-              <line class="prop-stroke" x1="104" y1="140" x2="100" y2="150" />
-              <line class="prop-stroke" x1="110" y1="141" x2="108" y2="150" />
-              <line class="prop-stroke" x1="116" y1="141" x2="118" y2="150" />
-              <line class="prop-stroke" x1="122" y1="140" x2="126" y2="150" />
+            <g id="propCite" class="prop-group">
+              <line class="prop-stroke" x1="145" y1="145" x2="200" y2="145" />
+              <line class="prop-stroke" x1="145" y1="145" x2="145" y2="85" />
+              <rect class="prop-fill" x="152" y="120" width="10" height="25" id="bar1" />
+              <rect class="prop-fill" x="168" y="105" width="10" height="40" id="bar2" />
+              <rect class="prop-fill" x="184" y="95" width="10" height="50" id="bar3" />
             </g>
-            <g id="propMouse" class="prop-group">
-              <ellipse class="prop-fill" cx="22" cy="142" rx="10" ry="6" />
-              <circle class="prop-fill" cx="12" cy="140" r="4" />
-              <line class="prop-stroke" x1="30" y1="142" x2="40" y2="138" />
-              <circle class="prop-fill" cx="8" cy="134" r="3" />
-              <circle class="prop-fill" cx="14" cy="132" r="3" />
+            <g id="propNetwork" class="prop-group">
+              <circle class="prop-fill" cx="130" cy="100" r="5" />
+              <circle class="prop-fill" cx="170" cy="90" r="5" />
+              <circle class="prop-fill" cx="185" cy="125" r="5" />
+              <circle class="prop-fill" cx="145" cy="135" r="5" />
+              <line class="prop-stroke" x1="130" y1="100" x2="170" y2="90" id="netL1" />
+              <line class="prop-stroke" x1="170" y1="90" x2="185" y2="125" id="netL2" />
+              <line class="prop-stroke" x1="185" y1="125" x2="145" y2="135" id="netL3" />
+              <line class="prop-stroke" x1="145" y1="135" x2="130" y2="100" id="netL4" />
+              <line class="prop-stroke" x1="130" y1="100" x2="185" y2="125" id="netL5" />
             </g>
-            <g id="propPlane" class="prop-group">
-              <ellipse class="prop-fill" cx="70" cy="70" rx="42" ry="12" />
-              <line class="prop-stroke" x1="70" y1="70" x2="40" y2="95" />
-              <line class="prop-stroke" x1="70" y1="70" x2="100" y2="95" />
-              <line class="prop-stroke" x1="100" y1="70" x2="118" y2="58" />
-              <line class="prop-stroke" x1="100" y1="70" x2="118" y2="82" />
+            <g id="propKeywords" class="prop-group">
+              <text class="prop-text" id="kw1" x="140" y="95">citation</text>
+              <text class="prop-text" id="kw2" x="160" y="115" font-size="13">network</text>
+              <text class="prop-text" id="kw3" x="145" y="135">topic</text>
+              <text class="prop-text" id="kw4" x="175" y="145">trend</text>
             </g>
-            <g id="propLaptop" class="prop-group">
-              <rect class="prop-fill" x="78" y="78" width="36" height="24" rx="2" />
-              <line class="prop-stroke" x1="74" y1="104" x2="118" y2="104" />
-              <text class="prop-text" x="84" y="94">&lt;/&gt;</text>
+            <g id="propViz" class="prop-group">
+              <rect class="prop-fill" x="140" y="88" width="60" height="50" rx="3" />
+              <polyline class="prop-fill" id="spark" points="148,125 158,110 168,118 178,98 188,105" />
+              <circle class="prop-fill" cx="158" cy="110" r="2.5" />
+              <circle class="prop-fill" cx="178" cy="98" r="2.5" />
             </g>
-            <g id="propMath" class="prop-group">
-              <text class="prop-text" id="mathA" x="86" y="52">∑</text>
-              <text class="prop-text" id="mathB" x="104" y="70">π</text>
-              <text class="prop-text" id="mathC" x="90" y="88">√</text>
-            </g>
-            <g id="propZzz" class="prop-group">
-              <text class="prop-text" id="zzz1" x="78" y="28">z</text>
-              <text class="prop-text" id="zzz2" x="90" y="18">z</text>
-              <text class="prop-text" id="zzz3" x="104" y="10">Z</text>
+            <g id="propInterpret" class="prop-group">
+              <circle class="prop-fill" cx="165" cy="105" r="14" />
+              <line class="prop-stroke" x1="175" y1="115" x2="190" y2="132" />
+              <polyline class="prop-fill" points="145,145 155,130 165,138 175,118 188,125" id="trendLine" />
+              <text class="prop-text" x="148" y="88">gap?</text>
             </g>
 
-            <!-- stick body -->
+            <!-- Main researcher -->
             <g id="figure">
-              <circle class="head" id="head" cx="50" cy="28" r="10" />
-              <line class="limb" id="torso" x1="50" y1="38" x2="50" y2="78" />
-              <line class="limb" id="armL" x1="50" y1="50" x2="34" y2="68" />
-              <line class="limb" id="armR" x1="50" y1="50" x2="66" y2="68" />
-              <line class="limb" id="legL" x1="50" y1="78" x2="38" y2="112" />
-              <line class="limb" id="legR" x1="50" y1="78" x2="62" y2="112" />
+              <circle class="head" id="head" cx="60" cy="36" r="10" />
+              <line class="limb" id="torso" x1="60" y1="46" x2="60" y2="88" />
+              <line class="limb" id="armL" x1="60" y1="58" x2="42" y2="78" />
+              <line class="limb" id="armR" x1="60" y1="58" x2="78" y2="78" />
+              <line class="limb" id="legL" x1="60" y1="88" x2="48" y2="122" />
+              <line class="limb" id="legR" x1="60" y1="88" x2="72" y2="122" />
+            </g>
+
+            <!-- Collaborator (networks scene) -->
+            <g id="figure2" class="fig2">
+              <circle class="head" id="head2" cx="110" cy="40" r="9" />
+              <line class="limb" id="torso2" x1="110" y1="49" x2="110" y2="86" />
+              <line class="limb" id="armL2" x1="110" y1="60" x2="94" y2="76" />
+              <line class="limb" id="armR2" x1="110" y1="60" x2="126" y2="76" />
+              <line class="limb" id="legL2" x1="110" y1="86" x2="100" y2="118" />
+              <line class="limb" id="legR2" x1="110" y1="86" x2="120" y2="118" />
             </g>
           </svg>
         </div>
       </div>
-      <div class="act-label" id="actLabel">Warming up…</div>
+      <div class="act-label" id="actLabel">Preparing bibliometric workflow...</div>
     </div>
     <main class="card">
       <h1>Starting PyBibX</h1>
       <p id="blurb">Please wait while PyBibX Desktop prepares the app. The first run can take several minutes while AI libraries download.</p>
-      <div class="status" id="status">Checking for the app…</div>
+      <div class="status" id="status">Checking for the app...</div>
       <div class="detail" id="detail"></div>
       <div class="bar indeterminate" id="bar" aria-hidden="true"><span id="barFill"></span></div>
       <div class="pct" id="pct"></div>
@@ -278,14 +288,14 @@
       if (mode === "bootstrap") {
         blurbEl.textContent =
           "Downloading PyBibX and AI libraries (one-time). This needs internet and may take several minutes.";
-        statusEl.textContent = "Installing packages…";
+        statusEl.textContent = "Installing packages...";
       } else if (mode === "reopen") {
-        blurbEl.textContent = "PyBibX is already running. Taking you to the app…";
-        statusEl.textContent = "Reopening…";
+        blurbEl.textContent = "PyBibX is already running. Taking you to the app...";
+        statusEl.textContent = "Reopening...";
       } else {
         blurbEl.textContent =
           "Please wait while PyBibX Desktop warms up. Loading AI libraries can take up to a minute even after install.";
-        statusEl.textContent = "Loading libraries…";
+        statusEl.textContent = "Loading libraries...";
       }
 
       function setProgress(percent) {
@@ -307,17 +317,11 @@
         fetch("/status", { cache: "no-store" })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            if (data && data.message) {
-              statusEl.textContent = data.message;
-            }
-            if (data && data.detail) {
-              detailEl.textContent = data.detail;
-            }
-            if (data) {
-              setProgress(data.percent);
-            }
+            if (data && data.message) statusEl.textContent = data.message;
+            if (data && data.detail) detailEl.textContent = data.detail;
+            if (data) setProgress(data.percent);
           })
-          .catch(function () { /* keep last text */ });
+          .catch(function () {});
       }
 
       function probe() {
@@ -327,7 +331,7 @@
           .then(function (data) {
             if (data && data.ready) {
               redirected = true;
-              statusEl.textContent = "Opening PyBibX…";
+              statusEl.textContent = "Opening PyBibX...";
               detailEl.textContent = "";
               setProgress(100);
               window.location.replace(target);
@@ -335,9 +339,7 @@
             }
             setTimeout(probe, 700);
           })
-          .catch(function () {
-            setTimeout(probe, 900);
-          });
+          .catch(function () { setTimeout(probe, 900); });
       }
 
       refreshStatus();
@@ -350,49 +352,40 @@
       var actor = document.getElementById("stickActor");
       var stage = actor.parentElement;
       var label = document.getElementById("actLabel");
+      var head = document.getElementById("head");
+      var torso = document.getElementById("torso");
       var armL = document.getElementById("armL");
       var armR = document.getElementById("armR");
       var legL = document.getElementById("legL");
       var legR = document.getElementById("legR");
-      var torso = document.getElementById("torso");
-      var head = document.getElementById("head");
-      var oar = document.getElementById("oar");
-      var propIds = ["propTree", "propBoat", "propDog", "propMouse", "propPlane", "propLaptop", "propMath", "propZzz"];
+      var fig2 = document.getElementById("figure2");
+      var head2 = document.getElementById("head2");
+      var torso2 = document.getElementById("torso2");
+      var armL2 = document.getElementById("armL2");
+      var armR2 = document.getElementById("armR2");
+      var legL2 = document.getElementById("legL2");
+      var legR2 = document.getElementById("legR2");
 
-      // ~14–18s each so long downloads stay entertaining
-      var acts = [
-        { id: "walk", label: "Out for a stroll…", duration: 15000, speed: 48, props: [] },
-        { id: "run", label: "Sprinting to the servers…", duration: 14000, speed: 115, props: [] },
-        { id: "dance", label: "Victory dance (still downloading)…", duration: 15000, speed: 22, props: [] },
-        { id: "yoga", label: "Deep stretch / deep breath…", duration: 16000, speed: 8, props: [] },
-        { id: "row", label: "Rowing across the data lake…", duration: 17000, speed: 36, props: ["propBoat"] },
-        { id: "snore", label: "Power nap while packages install…", duration: 16000, speed: 0, props: ["propZzz"] },
-        { id: "climb", label: "Climbing the dependency tree…", duration: 17000, speed: 10, props: ["propTree"] },
-        { id: "chaseDog", label: "Chasing a very good dog…", duration: 15000, speed: 95, props: ["propDog"] },
-        { id: "fleeMouse", label: "Running from a tiny mouse…", duration: 15000, speed: 105, props: ["propMouse"] },
-        { id: "plane", label: "Flying to the mirror CDN…", duration: 17000, speed: 70, props: ["propPlane"] },
-        { id: "math", label: "Doing the bibliometric maths…", duration: 16000, speed: 14, props: ["propMath"] },
-        { id: "code", label: "Writing just one more script…", duration: 16000, speed: 12, props: ["propLaptop"] },
-        { id: "read", label: "Skimming abstracts at light speed…", duration: 15000, speed: 20, props: [] },
-        { id: "jump", label: "Hopping over version conflicts…", duration: 14000, speed: 50, props: [] }
+      var propIds = [
+        "propCollect", "propClean", "propCite", "propNetwork",
+        "propKeywords", "propViz", "propInterpret"
       ];
 
-      function shuffle(arr) {
-        for (var i = arr.length - 1; i > 0; i--) {
-          var j = Math.floor(Math.random() * (i + 1));
-          var tmp = arr[i];
-          arr[i] = arr[j];
-          arr[j] = tmp;
-        }
-        return arr;
-      }
-      shuffle(acts);
+      // Sequential bibliometric workflow (order matters)
+      var acts = [
+        { id: "collect", label: "Collecting records...", duration: 16000, speed: 42, props: ["propCollect"], duo: false },
+        { id: "clean", label: "Cleaning and preprocessing data...", duration: 16000, speed: 18, props: ["propClean"], duo: false },
+        { id: "cite", label: "Analyzing productivity and citations...", duration: 16000, speed: 16, props: ["propCite"], duo: false },
+        { id: "network", label: "Building collaboration networks...", duration: 17000, speed: 22, props: ["propNetwork"], duo: true },
+        { id: "keywords", label: "Performing keyword and thematic analyses...", duration: 16000, speed: 14, props: ["propKeywords"], duo: false },
+        { id: "viz", label: "Generating visualizations...", duration: 16000, speed: 20, props: ["propViz"], duo: false },
+        { id: "interpret", label: "Interpreting trends and research gaps...", duration: 17000, speed: 12, props: ["propInterpret"], duo: false }
+      ];
 
       var actIndex = 0;
       var actStarted = performance.now();
-      var x = 30;
+      var x = 40;
       var dir = 1;
-      var climbY = 0;
       var last = performance.now();
 
       function setLine(el, x1, y1, x2, y2) {
@@ -402,168 +395,136 @@
         el.setAttribute("y2", y2);
       }
 
-      function showProps(list) {
+      function showProps(list, duo) {
         for (var i = 0; i < propIds.length; i++) {
           var el = document.getElementById(propIds[i]);
           if (!el) continue;
           if (list.indexOf(propIds[i]) >= 0) el.classList.add("is-on");
           else el.classList.remove("is-on");
         }
+        if (duo) fig2.classList.add("is-on");
+        else fig2.classList.remove("is-on");
+      }
+
+      function standBase(bounce) {
+        head.setAttribute("cx", "60");
+        head.setAttribute("cy", String(36 - bounce * 0.3));
+        setLine(torso, 60, 46 - bounce * 0.2, 60, 88 - bounce);
+        setLine(legL, 60, 88 - bounce, 48, 122 - bounce);
+        setLine(legR, 60, 88 - bounce, 72, 122 - bounce);
       }
 
       function pose(act, t) {
-        var hipX = 50, hipY = 78, shY = 50, shX = 50;
-        var swing, bounce, sway;
+        var swing, bounce, reach;
 
-        if (act === "walk" || act === "read") {
-          swing = Math.sin(t * 7) * (act === "read" ? 10 : 16);
+        if (act === "collect") {
+          // Carry papers while walking / stacking into a pile
+          swing = Math.sin(t * 7) * 14;
           bounce = Math.abs(Math.sin(t * 7)) * 2;
-          head.setAttribute("cy", String(28 - bounce * 0.3));
-          setLine(torso, shX, 38 - bounce * 0.2, hipX, hipY - bounce);
-          if (act === "read") {
-            setLine(armL, shX, shY, shX - 8, shY + 8);
-            setLine(armR, shX, shY, shX + 18, shY + 4);
-          } else {
-            setLine(armL, shX, shY, shX - 16, shY + 16 - swing);
-            setLine(armR, shX, shY, shX + 16, shY + 16 + swing);
+          standBase(bounce);
+          setLine(armL, 60, 58, 44, 78 - swing * 0.3);
+          setLine(armR, 60, 58, 92, 70 + Math.sin(t * 5) * 4);
+          var paper = document.getElementById("paperTop");
+          if (paper) paper.setAttribute("y", String(106 + Math.sin(t * 3) * 2));
+        } else if (act === "clean") {
+          // Scrub / shake funnel of messy data
+          bounce = Math.abs(Math.sin(t * 6)) * 2;
+          standBase(bounce);
+          reach = Math.sin(t * 5) * 10;
+          setLine(armL, 60, 58, 78 + reach, 70);
+          setLine(armR, 60, 58, 95, 85 + Math.sin(t * 5) * 6);
+          ["dirt1", "dirt2", "dirt3"].forEach(function (id, i) {
+            var d = document.getElementById(id);
+            if (!d) return;
+            d.setAttribute("opacity", String(0.35 + 0.65 * Math.abs(Math.sin(t * 3 + i))));
+            d.setAttribute("cy", String(138 + i * 3 + Math.sin(t * 4 + i) * 4));
+          });
+        } else if (act === "cite") {
+          // Point at growing citation bars
+          bounce = Math.abs(Math.sin(t * 2)) * 1.5;
+          standBase(bounce);
+          setLine(armL, 60, 58, 48, 78);
+          setLine(armR, 60, 58, 100, 100 + Math.sin(t * 3) * 6);
+          var h1 = 20 + (Math.sin(t * 1.5) * 0.5 + 0.5) * 10;
+          var h2 = 30 + (Math.sin(t * 1.5 + 1) * 0.5 + 0.5) * 14;
+          var h3 = 40 + (Math.sin(t * 1.5 + 2) * 0.5 + 0.5) * 12;
+          var b1 = document.getElementById("bar1");
+          var b2 = document.getElementById("bar2");
+          var b3 = document.getElementById("bar3");
+          if (b1) { b1.setAttribute("height", String(h1)); b1.setAttribute("y", String(145 - h1)); }
+          if (b2) { b2.setAttribute("height", String(h2)); b2.setAttribute("y", String(145 - h2)); }
+          if (b3) { b3.setAttribute("height", String(h3)); b3.setAttribute("y", String(145 - h3)); }
+        } else if (act === "network") {
+          // Two researchers linking a collaboration graph
+          swing = Math.sin(t * 4) * 8;
+          bounce = Math.abs(Math.sin(t * 4)) * 1.5;
+          standBase(bounce);
+          setLine(armL, 60, 58, 48, 76);
+          setLine(armR, 60, 58, 88 + swing * 0.3, 70);
+          head2.setAttribute("cy", String(40 - bounce * 0.3));
+          setLine(torso2, 110, 49, 110, 86);
+          setLine(armL2, 110, 60, 88 - swing * 0.2, 72);
+          setLine(armR2, 110, 60, 128, 78);
+          setLine(legL2, 110, 86, 100, 118);
+          setLine(legR2, 110, 86, 120, 118);
+          var pulse = 0.45 + 0.55 * Math.abs(Math.sin(t * 3));
+          ["netL1", "netL2", "netL3", "netL4", "netL5"].forEach(function (id, i) {
+            var line = document.getElementById(id);
+            if (line) line.setAttribute("opacity", String(0.35 + 0.65 * Math.abs(Math.sin(t * 2.5 + i))));
+          });
+          void pulse;
+        } else if (act === "keywords") {
+          // Sorting / tagging floating keywords
+          bounce = Math.abs(Math.sin(t * 3)) * 1.5;
+          standBase(bounce);
+          setLine(armL, 60, 58, 80, 72 + Math.sin(t * 4) * 5);
+          setLine(armR, 60, 58, 100, 88 + Math.sin(t * 4 + 1) * 5);
+          ["kw1", "kw2", "kw3", "kw4"].forEach(function (id, i) {
+            var kw = document.getElementById(id);
+            if (!kw) return;
+            var baseY = [95, 115, 135, 145][i];
+            kw.setAttribute("y", String(baseY + Math.sin(t * 2.2 + i) * 5));
+            kw.setAttribute("opacity", String(0.45 + 0.55 * Math.abs(Math.sin(t * 1.8 + i))));
+          });
+        } else if (act === "viz") {
+          // Draw a chart on a canvas / screen
+          bounce = Math.abs(Math.sin(t * 5)) * 1.5;
+          standBase(bounce);
+          setLine(armL, 60, 58, 50, 78);
+          setLine(armR, 60, 58, 112, 108 + Math.sin(t * 6) * 4);
+          var spark = document.getElementById("spark");
+          if (spark) {
+            var y1 = 125 + Math.sin(t * 2) * 3;
+            var y2 = 110 + Math.sin(t * 2 + 1) * 4;
+            var y3 = 118 + Math.sin(t * 2 + 2) * 3;
+            var y4 = 98 + Math.sin(t * 2 + 3) * 5;
+            var y5 = 105 + Math.sin(t * 2 + 4) * 3;
+            spark.setAttribute("points", "148," + y1 + " 158," + y2 + " 168," + y3 + " 178," + y4 + " 188," + y5);
           }
-          setLine(legL, hipX, hipY - bounce, hipX - 12, 112 - bounce + swing * 0.35);
-          setLine(legR, hipX, hipY - bounce, hipX + 12, 112 - bounce - swing * 0.35);
-        } else if (act === "run" || act === "chaseDog" || act === "fleeMouse") {
-          swing = Math.sin(t * 13) * 24;
-          bounce = Math.abs(Math.sin(t * 13)) * 5;
-          head.setAttribute("cy", String(26 - bounce * 0.4));
-          setLine(torso, shX + 2, 36 - bounce * 0.3, hipX - 2, hipY - bounce);
-          setLine(armL, shX, shY - 2, shX - 20, shY + 6 - swing);
-          setLine(armR, shX, shY - 2, shX + 20, shY + 6 + swing);
-          setLine(legL, hipX, hipY - bounce, hipX - 16, 110 - bounce + swing * 0.45);
-          setLine(legR, hipX, hipY - bounce, hipX + 16, 110 - bounce - swing * 0.45);
-          if (act === "fleeMouse") {
-            // arms up in panic
-            setLine(armL, shX, shY, shX - 14, shY - 16);
-            setLine(armR, shX, shY, shX + 14, shY - 16);
+        } else if (act === "interpret") {
+          // Study trends with a magnifying glass
+          bounce = Math.abs(Math.sin(t * 1.8)) * 1.2;
+          standBase(bounce);
+          setLine(armL, 60, 58, 48, 76);
+          setLine(armR, 60, 58, 118, 100 + Math.sin(t * 2) * 4);
+          var trend = document.getElementById("trendLine");
+          if (trend) {
+            var a = 130 + Math.sin(t) * 3;
+            var b = 138 + Math.sin(t + 1) * 3;
+            var c = 118 + Math.sin(t + 2) * 4;
+            trend.setAttribute("points", "145,145 155," + a + " 165," + b + " 175," + c + " 188,125");
           }
-        } else if (act === "dance") {
-          swing = Math.sin(t * 9) * 20;
-          bounce = Math.abs(Math.sin(t * 5.5)) * 6;
-          head.setAttribute("cy", String(26 - bounce * 0.5));
-          setLine(torso, shX + Math.sin(t * 4) * 3, 38 - bounce, hipX, hipY - bounce * 0.4);
-          setLine(armL, shX, shY - bounce * 0.3, shX - 8 + swing * 0.2, shY - 16);
-          setLine(armR, shX, shY - bounce * 0.3, shX + 8 - swing * 0.2, shY - 16);
-          setLine(legL, hipX, hipY - bounce * 0.4, hipX - 14, 112 - bounce * 0.2);
-          setLine(legR, hipX, hipY - bounce * 0.4, hipX + 10 + Math.sin(t * 7) * 6, 100 - bounce);
-        } else if (act === "yoga") {
-          sway = Math.sin(t * 1.4) * 4;
-          head.setAttribute("cy", "27");
-          setLine(torso, shX + sway * 0.2, 38, hipX, hipY);
-          setLine(armL, shX, shY, shX - 6 + sway, 18);
-          setLine(armR, shX, shY, shX + 6 + sway, 18);
-          setLine(legL, hipX, hipY, hipX - 2, 114);
-          setLine(legR, hipX, hipY, hipX + 16, 92);
-        } else if (act === "row") {
-          swing = Math.sin(t * 4) * 18;
-          bounce = Math.abs(Math.sin(t * 4)) * 2;
-          head.setAttribute("cy", String(34 - bounce));
-          setLine(torso, shX, 44, hipX, 88);
-          setLine(armL, shX, 56, shX - 22, 70 + swing);
-          setLine(armR, shX, 56, shX + 8, 72 - swing * 0.4);
-          setLine(legL, hipX, 88, hipX - 8, 108);
-          setLine(legR, hipX, 88, hipX + 14, 108);
-          if (oar) setLine(oar, shX - 8, 62, 8, 120 + swing * 0.3);
-        } else if (act === "snore") {
-          bounce = Math.sin(t * 1.8) * 1.5;
-          head.setAttribute("cy", String(78 + bounce));
-          head.setAttribute("cx", "58");
-          setLine(torso, 48, 88, 90, 92);
-          setLine(armL, 58, 90, 46, 102);
-          setLine(armR, 70, 90, 86, 84);
-          setLine(legL, 90, 92, 108, 100);
-          setLine(legR, 90, 92, 112, 110);
-          var z1 = document.getElementById("zzz1");
-          var z2 = document.getElementById("zzz2");
-          var z3 = document.getElementById("zzz3");
-          if (z1) z1.setAttribute("opacity", String(0.4 + 0.6 * Math.abs(Math.sin(t * 2))));
-          if (z2) z2.setAttribute("opacity", String(0.4 + 0.6 * Math.abs(Math.sin(t * 2 + 1))));
-          if (z3) z3.setAttribute("opacity", String(0.4 + 0.6 * Math.abs(Math.sin(t * 2 + 2))));
-        } else if (act === "climb") {
-          swing = Math.sin(t * 5) * 10;
-          climbY = (climbY + 0.35) % 40;
-          var cy = 70 - climbY;
-          head.setAttribute("cx", "50");
-          head.setAttribute("cy", String(cy - 20));
-          setLine(torso, 50, cy - 10, 50, cy + 28);
-          setLine(armL, 50, cy + 2, 50 + 14 + swing * 0.2, cy - 8);
-          setLine(armR, 50, cy + 2, 50 + 16 - swing * 0.2, cy + 10);
-          setLine(legL, 50, cy + 28, 50 + 12, cy + 44);
-          setLine(legR, 50, cy + 28, 50 + 10, cy + 38 + swing * 0.3);
-        } else if (act === "plane") {
-          bounce = Math.sin(t * 3) * 4;
-          head.setAttribute("cx", "70");
-          head.setAttribute("cy", String(62 + bounce));
-          setLine(torso, 70, 72 + bounce, 70, 88 + bounce);
-          setLine(armL, 70, 78 + bounce, 52, 78 + bounce);
-          setLine(armR, 70, 78 + bounce, 88, 78 + bounce);
-          setLine(legL, 70, 88 + bounce, 62, 98 + bounce);
-          setLine(legR, 70, 88 + bounce, 78, 98 + bounce);
-        } else if (act === "math") {
-          sway = Math.sin(t * 2) * 3;
-          head.setAttribute("cx", "50");
-          head.setAttribute("cy", "28");
-          setLine(torso, shX, 38, hipX, hipY);
-          setLine(armL, shX, shY, 78 + sway, 58);
-          setLine(armR, shX, shY, 86, 72 + sway);
-          setLine(legL, hipX, hipY, hipX - 10, 112);
-          setLine(legR, hipX, hipY, hipX + 10, 112);
-          var ma = document.getElementById("mathA");
-          var mb = document.getElementById("mathB");
-          var mc = document.getElementById("mathC");
-          if (ma) ma.setAttribute("y", String(48 + Math.sin(t * 3) * 4));
-          if (mb) mb.setAttribute("y", String(68 + Math.sin(t * 3 + 1) * 4));
-          if (mc) mc.setAttribute("y", String(86 + Math.sin(t * 3 + 2) * 4));
-        } else if (act === "code") {
-          bounce = Math.abs(Math.sin(t * 6)) * 1.5;
-          head.setAttribute("cx", "50");
-          head.setAttribute("cy", String(30 - bounce));
-          setLine(torso, shX, 40, hipX, 82);
-          setLine(armL, shX, shY, 82, 90 + bounce);
-          setLine(armR, shX, shY, 96, 88 - bounce);
-          setLine(legL, hipX, 82, hipX - 8, 112);
-          setLine(legR, hipX, 82, hipX + 12, 112);
-        } else if (act === "jump") {
-          var cycle = (t * 2.2) % (Math.PI * 2);
-          bounce = Math.max(0, Math.sin(cycle)) * 28;
-          swing = Math.sin(cycle) * 12;
-          head.setAttribute("cy", String(28 - bounce));
-          setLine(torso, shX, 38 - bounce, hipX, hipY - bounce);
-          setLine(armL, shX, shY - bounce, shX - 16, shY - bounce - swing);
-          setLine(armR, shX, shY - bounce, shX + 16, shY - bounce - swing);
-          setLine(legL, hipX, hipY - bounce, hipX - 10, 112 - bounce + Math.max(0, -swing));
-          setLine(legR, hipX, hipY - bounce, hipX + 10, 112 - bounce + Math.max(0, -swing));
         } else {
-          head.setAttribute("cx", "50");
-          head.setAttribute("cy", "28");
-          setLine(torso, 50, 38, 50, 78);
-          setLine(armL, 50, 50, 34, 68);
-          setLine(armR, 50, 50, 66, 68);
-          setLine(legL, 50, 78, 38, 112);
-          setLine(legR, 50, 78, 62, 112);
-        }
-
-        // reset head cx when not overridden by snore/plane
-        if (act !== "snore" && act !== "plane" && act !== "climb") {
-          head.setAttribute("cx", "50");
+          standBase(0);
+          setLine(armL, 60, 58, 42, 78);
+          setLine(armR, 60, 58, 78, 78);
         }
       }
 
       function applyAct(act) {
         label.textContent = act.label;
-        showProps(act.props || []);
-        head.setAttribute("cx", "50");
-        climbY = 0;
-        if (act.id === "snore" || act.id === "yoga" || act.id === "code" || act.id === "math") {
-          // face a stable direction for seated/standing bits
-          dir = 1;
-        }
+        showProps(act.props || [], !!act.duo);
+        dir = 1;
       }
 
       function tick(now) {
@@ -572,33 +533,19 @@
         var act = acts[actIndex];
         if (now - actStarted > act.duration) {
           actIndex = (actIndex + 1) % acts.length;
-          if (actIndex === 0) shuffle(acts);
           act = acts[actIndex];
           actStarted = now;
           applyAct(act);
         }
 
-        var maxX = Math.max(20, stage.clientWidth - 150);
-        var speed = act.speed;
-        if (act.id === "plane") {
-          // gentle airborne drift; bounce handled in pose
-          x += dir * speed * dt;
-        } else if (act.id === "snore") {
-          x = Math.min(Math.max(x, 40), maxX - 40);
-        } else if (act.id === "climb") {
-          x = Math.min(Math.max(x, maxX * 0.55), maxX * 0.7);
-        } else {
-          x += dir * speed * dt;
-        }
+        var maxX = Math.max(20, stage.clientWidth - 230);
+        x += dir * act.speed * dt;
         if (x >= maxX) { x = maxX; dir = -1; }
         if (x <= 0) { x = 0; dir = 1; }
 
-        // don't mirror text-heavy / boat props awkwardly; flip only locomotion
-        var flip = (act.id === "walk" || act.id === "run" || act.id === "chaseDog" ||
-          act.id === "fleeMouse" || act.id === "dance" || act.id === "jump" || act.id === "row")
-          ? dir : 1;
-        var yOff = act.id === "plane" ? -18 + Math.sin(now / 400) * 6 : 0;
-        actor.style.transform = "translateX(" + x + "px) translateY(" + yOff + "px) scaleX(" + flip + ")";
+        // Keep text/props readable: only flip for walking collection
+        var flip = (act.id === "collect") ? dir : 1;
+        actor.style.transform = "translateX(" + x + "px) scaleX(" + flip + ")";
         pose(act.id, now / 1000);
         requestAnimationFrame(tick);
       }

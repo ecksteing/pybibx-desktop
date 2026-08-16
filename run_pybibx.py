@@ -195,7 +195,7 @@ def open_loading_page(
     else:
         html = (
             "<!DOCTYPE html><html><body>"
-            "<p>Starting PyBibX…</p>"
+            "<p>Starting PyBibX...</p>"
             "<script>setTimeout(function(){location.replace('"
             f"{app_url(app_port)}"
             "');},3000);</script>"
@@ -206,7 +206,7 @@ def open_loading_page(
         if mode == "bootstrap":
             write_status(
                 "Preparing to download AI libraries",
-                detail="One-time setup; this can take several minutes…",
+                detail="One-time setup; this can take several minutes...",
                 phase="bootstrap",
             )
         elif mode == "reopen":
@@ -214,7 +214,7 @@ def open_loading_page(
         else:
             write_status(
                 "Loading Python libraries",
-                detail="Subsequent launches can take a minute while AI packages warm up…",
+                detail="Subsequent launches can take a minute while AI packages warm up...",
                 phase="start",
             )
 
@@ -225,7 +225,7 @@ def open_loading_page(
                 if read_status is None:
                     payload = {
                         "phase": mode,
-                        "message": "Starting…",
+                        "message": "Starting...",
                         "detail": "",
                         "percent": None,
                     }

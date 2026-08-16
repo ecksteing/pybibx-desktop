@@ -127,7 +127,7 @@ def _parse_pip_line(line: str) -> tuple[str, str, float | None] | None:
     m = _PIP_INSTALLING.match(text)
     if m:
         packages = m.group(1).strip()
-        short = packages if len(packages) <= 80 else packages[:77] + "…"
+        short = packages if len(packages) <= 80 else packages[:77] + "..."
         return ("Installing packages", short, None)
 
     if text.lower().startswith("successfully installed"):
@@ -250,7 +250,7 @@ def ensure_runtime_ready() -> bool:
     _log("pybibx not installed; bootstrapping runtime packages...")
     _status(
         "Downloading AI libraries (one-time)",
-        "This may take several minutes…",
+        "This may take several minutes...",
         phase="bootstrap",
     )
     # CPU wheels first so students avoid multi-GB CUDA builds.
@@ -347,7 +347,7 @@ def start_web_app() -> str:
 
     _status(
         "Loading AI libraries",
-        "Importing pybibx / PyTorch (this is the slow part on each launch)…",
+        "Importing pybibx / PyTorch (this is the slow part on each launch)...",
         phase="start",
     )
     import pybibx

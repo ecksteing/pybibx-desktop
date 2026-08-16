@@ -2,17 +2,16 @@
 
 An easy way to run [pybibx](https://github.com/Valdecy/pybibx) on Windows. ➡️ [Install PyBibX Desktop](https://github.com/ecksteing/pybibx-desktop/releases) and run. No separate Python install needed.
 
-> **Platform note:** The current release targets **Windows x64**. macOS and Linux packaging are planned for later.
+> **Platform note:** The current release targets **Windows**. macOS and Linux versions are planned for later.
 
 ## Why this tool?
 
-pybibx is excellent for bibliometric and scientometric analysis (including a browser-based Web App), but installing Python and heavy AI dependencies is a hurdle for students. This project ships a one-click wrapper: install, wait for a one-time library download, then run.
+pybibx is excellent for bibliometric and scientometric analysis (including a browser-based Web App), but installing Python and dependencies is a hurdle for students. This project ships a one-click wrapper: install, then run.
 
 ## Installation (end users)
 
-1. Download the latest release from [GitHub Releases](https://github.com/ecksteing/pybibx-desktop/releases).
-2. Run the installer (no administrator rights required; installs under your user profile).
-3. Keep the optional **Download PyBibX and AI libraries now** task checked if you are online (recommended). This one-time step can take several minutes.
+1. [Download the latest release](https://github.com/ecksteing/pybibx-desktop/releases).
+2. Install.
 4. Start **PyBibX Desktop** from the Start Menu or desktop shortcut. The pybibx Web App opens in your browser.
 
 Logs (if something goes wrong) are written to `%LOCALAPPDATA%\PyBibX Desktop\launcher.log` (and `bootstrap.log` / `runtime.log` in the same folder).
@@ -29,7 +28,7 @@ Windows SmartScreen (and some browsers or antivirus tools) may warn that the app
 **Microsoft Edge / Chrome download warning:**
 
 1. Open the browser’s downloads list.
-2. Choose **Keep** / **Keep anyway** (Edge may ask you to confirm under the **…** menu).
+2. Choose **Keep** / **Keep anyway** (Edge may ask you to confirm under the **...** menu).
 
 Only install builds downloaded from the official [GitHub Releases](https://github.com/ecksteing/pybibx-desktop/releases) page for this project. If your organisation’s antivirus still blocks the file, ask IT to allowlist it, or open a [GitHub Issue](https://github.com/ecksteing/pybibx-desktop/issues).
 
@@ -37,7 +36,7 @@ Only install builds downloaded from the official [GitHub Releases](https://githu
 
 #### Do I need to install Python?
 
-No. The installer includes a portable Python runtime. PyBibX and AI libraries (PyTorch, transformers, BERTopic, and related packages) download once during install or on first launch.
+No. Just download and run the app.
 
 #### Do I get the same features as pybibx?
 
@@ -45,13 +44,11 @@ Yes. This app launches the official pybibx Web App (`pybibx.web_app()`).
 
 #### The app is slow to open after install?
 
-Yes, especially the first few launches. PyBibX pulls in large AI libraries (PyTorch and friends). The desktop wrapper shows a loading screen on **every** launch and only opens the app once the UI is ready. Later launches are usually faster once Windows has cached the libraries, but a cold start can still take a while.
+Yes, especially the first few launches. There is alot of code to install and run. Later launches are usually faster once Windows has cached the code, but a cold start can still take a while.
 
 #### Is the latest version of pybibx included?
 
-Each desktop release ships with a lean portable Python. When online, the app checks PyPI for a newer `pybibx` at most once per week and upgrades the portable environment if available. If you are offline, the already-installed copy still runs.
-
-Desktop wrapper updates are separate: the launcher compares `version.txt` on this GitHub repo and notifies users to download a new installer from Releases.
+Each desktop release ships with a pybibx. When online, the app checks for a newer version weekly. If you are offline, the already-installed copy still runs.
 
 #### Why did you create this tool?
 
@@ -70,7 +67,6 @@ This project is distributed under the [GNU GPL v3](LICENSE). pybibx and its depe
 
 - [pybibx](https://github.com/Valdecy/pybibx) by Valdecy Pereira and colleagues
 - App icon adapted from Google Material Symbols **book_ribbon** (Apache 2.0)
-- Pattern inspired by [Bibliometrix Desktop](https://github.com/ecksteing/bibliometrix-desktop)
 
 ## Building from source (maintainers)
 

@@ -61,7 +61,7 @@ def read_status() -> dict:
     except (OSError, ValueError, TypeError):
         return {
             "phase": "start",
-            "message": "Starting…",
+            "message": "Starting...",
             "detail": "",
             "percent": None,
             "updated_at": None,
