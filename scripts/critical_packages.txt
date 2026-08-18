@@ -14,3 +14,4 @@ Pillow
 chardet
 numba
 wordcloud
+gensim

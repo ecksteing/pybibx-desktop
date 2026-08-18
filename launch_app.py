@@ -197,6 +197,40 @@ def _record_update_check() -> None:
         _log(f"Could not write PyPI check stamp: {exc}")
 
 
+def _update_lock_path() -> Path:
+    return _app_data_dir() / "pypi_update.lock"
+
+
+def _acquire_update_lock() -> bool:
+    path = _update_lock_path()
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        with os.fdopen(fd, "w", encoding="ascii") as fh:
+            fh.write(datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+        return True
+    except FileExistsError:
+        try:
+            age = time.time() - path.stat().st_mtime
+        except OSError:
+            age = 0.0
+        if age > 600:
+            try:
+                path.unlink()
+            except OSError:
+                return False
+            return _acquire_update_lock()
+        return False
+    except OSError:
+        return False
+
+
+def _release_update_lock() -> None:
+    try:
+        _update_lock_path().unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 def _pip_install(args: list[str], *, phase: str = "bootstrap", label: str = "Installing packages") -> int:
     cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "--prefer-binary", *args]
     _log("Running: " + " ".join(cmd))
@@ -258,7 +292,45 @@ _CRITICAL_PACKAGES = [
     "chardet",
     "numba",
     "wordcloud",
+    "gensim",
 ]
+
+# PyPI name -> import name (when they differ).
+_CRITICAL_IMPORT_NAMES: dict[str, str] = {
+    "Pillow": "PIL",
+    "scikit-learn": "sklearn",
+}
+
+
+def _missing_critical_packages() -> list[str]:
+    missing: list[str] = []
+    for pkg in _CRITICAL_PACKAGES:
+        mod = _CRITICAL_IMPORT_NAMES.get(pkg, pkg.replace("-", "_"))
+        try:
+            __import__(mod)
+        except ImportError:
+            missing.append(pkg)
+    return missing
+
+
+def _install_missing_critical_packages() -> bool:
+    missing = _missing_critical_packages()
+    if not missing:
+        return True
+    _log(f"Installing missing critical packages: {', '.join(missing)}")
+    code = _pip_install(
+        missing,
+        phase="bootstrap",
+        label="Installing missing libraries",
+    )
+    if code != 0:
+        _log(f"Missing critical package install failed with exit code {code}")
+        return False
+    still_missing = _missing_critical_packages()
+    if still_missing:
+        _log(f"Still missing after install: {', '.join(still_missing)}")
+        return False
+    return True
 
 _AI_PACKAGES = [
     "bertopic",
@@ -319,6 +391,9 @@ def ensure_runtime_ready() -> bool:
     """
     if _can_start_web_ui():
         _status("Checking installed packages", phase="start")
+        if not _install_missing_critical_packages():
+            _status("Package install incomplete", "Some core libraries are still missing", phase="error")
+            return False
         _mark_file("runtime_ui_ready.txt")
         return True
 
@@ -414,7 +489,8 @@ def install_ai_stack_background() -> None:
         _log("Background AI install finished with missing imports; will retry next launch.")
 
 
-def maybe_update_pybibx() -> None:
+def check_pybibx_updates(*, force: bool = False) -> dict:
+    """Check PyPI for a newer pybibx and install it when online."""
     enable = os.environ.get("PYBIBX_DESKTOP_RUNTIME_UPDATES", "1").strip() not in {
         "0",
         "false",
@@ -422,37 +498,107 @@ def maybe_update_pybibx() -> None:
         "no",
         "NO",
     }
+    current = _installed_pybibx_version()
     if not enable:
         _log("Runtime updates disabled by environment.")
-        return
-    if not _should_run_update_check():
+        return {
+            "ok": True,
+            "status": "disabled",
+            "message": "Automatic updates are disabled.",
+            "current": current,
+            "latest": None,
+        }
+
+    if not force and not _should_run_update_check():
         _log("Skipping PyPI update check (checked within the last week).")
-        return
+        return {
+            "ok": True,
+            "status": "skipped",
+            "message": "Already checked within the last week.",
+            "current": current,
+            "latest": None,
+        }
 
-    _status("Checking for pybibx updates", phase="start")
-    current = _installed_pybibx_version()
-    latest = _pypi_pybibx_version(timeout=3.0)
-    if latest is None:
-        _log("PyPI unreachable or pybibx metadata missing; keeping installed copy.")
-        _record_update_check()
-        return
+    if not _acquire_update_lock():
+        return {
+            "ok": False,
+            "status": "busy",
+            "message": "An update check is already running.",
+            "current": current,
+            "latest": None,
+        }
 
-    if current and _parse_version(latest) <= _parse_version(current):
-        _log(f"pybibx is up to date ({current}).")
-        _record_update_check()
-        return
+    try:
+        _status("Checking for pybibx updates", phase="update")
+        latest = _pypi_pybibx_version(timeout=8.0 if force else 3.0)
+        if latest is None:
+            _log("PyPI unreachable or pybibx metadata missing; keeping installed copy.")
+            _record_update_check()
+            msg = "Could not reach PyPI. Your installed copy will be used."
+            _status(msg, current or "", phase="update")
+            return {
+                "ok": True,
+                "status": "offline",
+                "message": msg,
+                "current": current,
+                "latest": None,
+            }
 
-    _log(f"Updating pybibx: {current or 'none'} -> {latest}")
-    code = _pip_install(
-        [f"pybibx=={latest}"],
-        phase="update",
-        label=f"Updating pybibx to {latest}",
-    )
-    if code == 0:
-        _log(f"pybibx updated to {_installed_pybibx_version() or latest}")
-    else:
+        if current and _parse_version(latest) <= _parse_version(current):
+            _log(f"pybibx is up to date ({current}).")
+            _record_update_check()
+            msg = f"pybibx is up to date ({current})."
+            _status(msg, "", phase="update")
+            return {
+                "ok": True,
+                "status": "up_to_date",
+                "message": msg,
+                "current": current,
+                "latest": latest,
+            }
+
+        _log(f"Updating pybibx: {current or 'none'} -> {latest}")
+        code = _pip_install(
+            [f"pybibx=={latest}"],
+            phase="update",
+            label=f"Updating pybibx to {latest}",
+        )
+        if code == 0:
+            current = _installed_pybibx_version() or latest
+            _log(f"pybibx updated to {current}")
+            msg = f"Updated pybibx to {current}."
+            _status(msg, "", phase="update")
+            return {
+                "ok": True,
+                "status": "updated",
+                "message": msg,
+                "current": current,
+                "latest": latest,
+            }
+
         _log(f"pybibx update failed with exit code {code}; continuing with {current}")
-    _record_update_check()
+        msg = f"Update failed; continuing with pybibx {current or 'already installed'}."
+        _status(msg, f"Exit code {code}", phase="update")
+        return {
+            "ok": False,
+            "status": "failed",
+            "message": msg,
+            "current": current,
+            "latest": latest,
+        }
+    finally:
+        _record_update_check()
+        _release_update_lock()
+
+
+def maybe_update_pybibx() -> None:
+    check_pybibx_updates(force=False)
+
+
+def run_update_check_cli() -> int:
+    result = check_pybibx_updates(force=True)
+    print(json.dumps(result, ensure_ascii=False), flush=True)
+    return 0 if result.get("ok") else 1
 
 
 def start_web_app() -> str:
@@ -524,4 +670,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     _ = threading
+    if "--check-updates" in sys.argv:
+        raise SystemExit(run_update_check_cli())
     raise SystemExit(main())

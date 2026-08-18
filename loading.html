@@ -86,6 +86,43 @@
       color: var(--muted);
       min-height: 1em;
     }
+    .updates {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--track);
+      text-align: center;
+    }
+    .updates-note {
+      margin: 0 0 12px;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .updates button {
+      appearance: none;
+      border: 1px solid var(--accent);
+      background: #ffffff;
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .updates button:hover:not(:disabled) {
+      background: #f3f8fa;
+    }
+    .updates button:disabled {
+      opacity: 0.65;
+      cursor: default;
+    }
+    .updates-result {
+      margin-top: 10px;
+      min-height: 1.2em;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
     @media (prefers-reduced-motion: reduce) {
       .bar.indeterminate > span { animation: none; width: 40%; }
     }
@@ -98,6 +135,14 @@
     <div class="detail" id="detail"></div>
     <div class="bar indeterminate" id="bar" aria-hidden="true"><span id="barFill"></span></div>
     <div class="pct" id="pct"></div>
+    <section class="updates" id="updatesSection" hidden>
+      <p class="updates-note">
+        PyBibX checks for updates automatically about once a week.
+        You do not need to check manually.
+      </p>
+      <button type="button" id="checkUpdatesBtn">Check for updates now</button>
+      <div class="updates-result" id="updatesResult" aria-live="polite"></div>
+    </section>
   </main>
   <script>
     (function () {
@@ -111,6 +156,35 @@
       var pctEl = document.getElementById("pct");
       var funLoader = document.getElementById("funLoader");
       var redirected = false;
+      var updatesSection = document.getElementById("updatesSection");
+      var checkUpdatesBtn = document.getElementById("checkUpdatesBtn");
+      var updatesResult = document.getElementById("updatesResult");
+      var updateCheckRunning = false;
+
+      if (mode === "start") {
+        updatesSection.hidden = false;
+      }
+
+      checkUpdatesBtn.addEventListener("click", function () {
+        if (updateCheckRunning) return;
+        updateCheckRunning = true;
+        checkUpdatesBtn.disabled = true;
+        updatesResult.textContent = "Checking for pybibx updates…";
+        fetch("/check-updates", { method: "POST", cache: "no-store" })
+          .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+          .then(function (res) {
+            var data = res.data || {};
+            updatesResult.textContent = data.message || (res.ok ? "Update check finished." : "Update check failed.");
+          })
+          .catch(function () {
+            updatesResult.textContent = "Could not run the update check. Try again in a moment.";
+          })
+          .finally(function () {
+            updateCheckRunning = false;
+            checkUpdatesBtn.disabled = false;
+            refreshStatus();
+          });
+      });
 
       var funLabels = [
 	  "First run is slow (unfortunately) ...",

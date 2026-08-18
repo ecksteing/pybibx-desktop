@@ -218,7 +218,107 @@ def open_loading_page(
                 phase="start",
             )
 
+    python_path = find_python(base_dir)
+    launch_script = base_dir / "launch_app.py"
+
     class LoadingHandler(BaseHTTPRequestHandler):
+        def _send_json(self, payload: dict, *, status: int = 200) -> None:
+            body = json.dumps(payload).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self) -> None:  # noqa: N802
+            path = self.path.split("?", 1)[0]
+            if path != "/check-updates":
+                self.send_error(404)
+                return
+            if mode != "start":
+                self._send_json(
+                    {
+                        "ok": False,
+                        "status": "unavailable",
+                        "message": "Manual update checks are only available while the app is starting.",
+                    },
+                    status=403,
+                )
+                return
+            if python_path is None or not launch_script.is_file():
+                self._send_json(
+                    {
+                        "ok": False,
+                        "status": "unavailable",
+                        "message": "Bundled Python is not available.",
+                    },
+                    status=503,
+                )
+                return
+
+            env = os.environ.copy()
+            env["PYBIBX_DESKTOP_LAUNCH_BROWSER"] = "0"
+            env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+            env["PYTHONUTF8"] = "1"
+            env["PYTHONIOENCODING"] = "utf-8"
+            env["PYTHONUNBUFFERED"] = "1"
+            env["PYTHONNOUSERSITE"] = "1"
+
+            try:
+                result = subprocess.run(
+                    [str(python_path), str(launch_script), "--check-updates"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    creationflags=_creationflags_no_window(),
+                    timeout=300,
+                    env=env,
+                )
+            except subprocess.TimeoutExpired:
+                self._send_json(
+                    {
+                        "ok": False,
+                        "status": "failed",
+                        "message": "Update check timed out. Try again in a moment.",
+                    },
+                    status=504,
+                )
+                return
+            except OSError as exc:
+                self._send_json(
+                    {
+                        "ok": False,
+                        "status": "failed",
+                        "message": f"Could not run update check: {exc}",
+                    },
+                    status=500,
+                )
+                return
+
+            stdout = (result.stdout or "").strip()
+            payload = None
+            if stdout:
+                for line in reversed(stdout.splitlines()):
+                    line = line.strip()
+                    if line.startswith("{"):
+                        try:
+                            payload = json.loads(line)
+                            break
+                        except ValueError:
+                            continue
+            if payload is None:
+                detail = (result.stderr or stdout or "Unknown error").strip()[:200]
+                payload = {
+                    "ok": False,
+                    "status": "failed",
+                    "message": "Update check failed.",
+                    "detail": detail,
+                }
+            self._send_json(payload, status=200 if payload.get("ok", False) else 500)
+
         def do_GET(self) -> None:  # noqa: N802
             path = self.path.split("?", 1)[0]
             if path in ("/status", "/status.json"):

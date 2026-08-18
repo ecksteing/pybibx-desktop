@@ -136,7 +136,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $version = (Get-Content (Join-Path $Root "version.txt") -Raw).Trim()
-$setup = Join-Path $Root "Output\PyBibXSetup_$version.exe"
+$setup = Join-Path $Root "Output\PyBibXDesktopSetup_$version.exe"
 if (-not (Test-Path $setup)) {
     throw "Expected installer not found: $setup"
 }

@@ -92,7 +92,7 @@ This will:
 1. Download / prepare `Python-Portable\` (embeddable CPython + pip)
 2. Bake critical packages into that portable runtime (`scripts/bake_critical_packages.ps1` + `scripts/critical_packages.txt`) — setup exe grows; first launch stays faster
 3. Compile the onedir launcher with PyInstaller (`--onedir --noconsole`) and stage `run_pybibx.exe` + `_internal\` at the repo root
-4. Compile `installer_config.iss` into `Output\PyBibXSetup_<version>.exe`
+4. Compile `installer_config.iss` into `Output\PyBibXDesktopSetup_<version>.exe`
 
 Useful flags:
 
